@@ -1,0 +1,149 @@
+from .models import Offer
+from  rest_framework import serializers
+from apps.core.services.media_service import MediaService
+from apps.core.models import Location
+from apps.core.serializers import LocationSerializer,MediaSerializer
+"""
+ "location": {
+    "city": "Lagos",
+    "area": "Lekki",
+    "street": "Admiralty Way",
+    "latitude": 6.45,
+    "longitude": 3.47
+  }
+
+PATCH /offers/{id}/steps/details/
+PATCH /offers/{id}/steps/location/
+PATCH /offers/{id}/steps/pricing/
+"""
+
+class OfferCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Offer
+        fields = []  # empty → system controls creation
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+        if not user.profile.is_verified:
+            raise serializers.ValidationError("User profile is not verified")
+        if not user.profile.type == "sender":
+            raise serializers.ValidationError("User profile is not a sender")
+
+        return Offer.objects.create(
+            sender=user,
+            status=Offer.Status.DRAFT,
+            current_step=Offer.Step.DETAILS
+        )
+
+class OfferDetailsSerializer(serializers.ModelSerializer):
+    # image = serializers.ListField(
+    #     child=serializers.ImageField(max_length=None, use_url=True),
+    #     required=False
+    # )
+    image = serializers.ImageField(required=False)
+    class Meta:
+        model = Offer
+        fields = ["package_type", "is_fragile", "description", "image"]
+
+
+class OfferLocationSerializer(serializers.ModelSerializer):
+    # write only serializers
+    # Write-only accepts dict
+    pickup_location = serializers.JSONField(write_only=True, required=False)
+    delivery_location = serializers.JSONField(write_only=True, required=False)
+   
+    # # Nested read-only for API output
+    pickup_location_detail = LocationSerializer(source="pickup_location", read_only=True)
+    delivery_location_detail = LocationSerializer(source="delivery_location", read_only=True)
+
+    class Meta:
+        model = Offer
+        fields = ["id","pickup_location", "delivery_location","pickup_location_detail", "delivery_location_detail","receiver_name", "receiver_phone"]
+
+
+    def update(self, instance, validated_data):
+        pickup_location = validated_data.pop("pickup_location", None)
+        if pickup_location:
+            instance.pickup_location = Location.objects.create(**pickup_location)
+        delivery_location = validated_data.pop("delivery_location", None)
+        if delivery_location:
+            instance.delivery_location = Location.objects.create(**delivery_location)
+
+class OfferPricingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Offer
+        fields = ["base_price", "is_urgent","total_price", "platform_fee","urgent_fee"]
+        read_only = ["total_price", "platform_fee","urgent_fee"]
+
+
+class OfferTransitionSerializer(serializers.Serializer):
+    """Track final offer step to start offer status"""
+    action = serializers.ChoiceField(choices=[
+        Offer.Status.POSTED,
+        Offer.Status.ACCEPTED,
+        Offer.Status.IN_TRANSIT,
+        Offer.Status.DELIVERED,
+        Offer.Status.CANCELLED,
+    ])
+
+
+class OfferListSerializer(serializers.ModelSerializer):
+
+    pickup_location = LocationSerializer()
+    delivery_location = LocationSerializer()
+
+    class Meta:
+        model = Offer
+        fields = [
+            "id",
+            "code",
+            "package_type",
+            "is_fragile",
+            "pickup_location",
+            "delivery_location",
+            "is_urgent",
+            "urgent_fee",
+
+            "platform_fee",
+            "total_price",
+            'receiver_name',
+            'receiver_phone',
+            "status",
+        ]
+
+
+class OfferSerializer(serializers.ModelSerializer):
+
+    # pickup_location = LocationSerializer()
+    # delivery_location = LocationSerializer()
+    location = OfferLocationSerializer(source="*", read_only=True)
+    details = OfferDetailsSerializer(source="*", read_only=True)
+    image = serializers.SerializerMethodField(read_only=True)
+    pricing = serializers.SerializerMethodField(read_only=True)
+
+    def get_pricing(self, obj):
+        return OfferPricingSerializer(obj).data
+
+    class Meta:
+        model = Offer
+        #all field on model with the custom
+        fields = [
+            "id",
+            "code",
+            "package_type",
+            "is_fragile",
+            "description",
+            "image",
+            "details",
+            "location",
+            "pricing",
+            "status",
+            "current_step",
+        ]
+
+    def get_image(self, obj):
+        image = obj.image
+        return MediaSerializer(image).data if image else None
+
+

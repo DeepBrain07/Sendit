@@ -42,6 +42,9 @@ class Notification(models.Model):
         NEW_OFFER = "new_offer", "New Offer"
         OFFER_ACCEPTED = "offer_accepted", "Offer Accepted"
         OFFER_COMPLETED = "offer_completed", "Offer Completed"
+        PAYMENT_SUCCESS = "payment_success", "Payment Success"
+        PAYOUT_SUCCESS = "payout_success", "Payout Success"
+
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -66,6 +69,10 @@ class Notification(models.Model):
             models.Index(fields=["user", "is_read"]),
             models.Index(fields=["created_at"]),
         ]
+
+    def mark_as_read(self):
+        self.is_read = True
+        self.save(update_fields=["is_read"])
 
     def __str__(self):
         return f"{self.user} - {self.type}"
