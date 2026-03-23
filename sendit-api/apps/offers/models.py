@@ -20,6 +20,7 @@ class Offer(models.Model):
         IN_TRANSIT = "in_transit", "In Transit"
         DELIVERED = "delivered", "Delivered"
         CANCELLED = "cancelled", "Cancelled"
+        DISPUTED = "disputed", "Disputed"
 
     class Step(models.TextChoices):
         DETAILS = "details"

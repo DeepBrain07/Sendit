@@ -32,6 +32,9 @@ class OfferStatusService:
         if action == offer.Status.CANCELLED:
             return cls._cancel(offer, user)
 
+        if action == Offer.Status.DISPUTED:
+            return cls._dispute(offer, user)
+
         raise ValidationError("Invalid action")
     
   
@@ -96,8 +99,17 @@ class OfferStatusService:
         if offer.status != Offer.Status.IN_TRANSIT:
             raise ValidationError("Invalid state")
 
-        offer.status = Offer.Status.DELIVERED
-        offer.save()
+        with transaction.atomic():
+            offer.status = Offer.Status.DELIVERED
+            offer.save()
+
+            # Mark escrow as ready for release
+            try:
+                escrow = offer.escrow
+                escrow.mark_release_ready()
+            except Exception as e:
+                # Log that escrow couldn't be updated
+                print(f"Error updating escrow status for offer {offer.code}: {e}")
 
         return offer
 
@@ -117,4 +129,24 @@ class OfferStatusService:
       offer.save()
 
       return offer
+
+    @staticmethod
+    def _dispute(offer, user):
+        if user not in [offer.sender, offer.carrier]:
+            raise ValidationError("Only sender or carrier can dispute")
+
+        if offer.status not in [Offer.Status.ACCEPTED, Offer.Status.IN_TRANSIT, Offer.Status.DELIVERED]:
+            raise ValidationError("Cannot dispute at this stage")
+
+        with transaction.atomic():
+            offer.status = Offer.Status.DISPUTED
+            offer.save()
+
+            try:
+                escrow = offer.escrow
+                escrow.dispute()
+            except Exception as e:
+                print(f"Error updating escrow for dispute: {e}")
+
+        return offer
 

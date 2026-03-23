@@ -150,3 +150,20 @@ class OfferService:
             message=f"You were selected for {proposal.offer.code}",
             content_object=proposal.offer
         )
+
+    @staticmethod
+    def handle_offer_accepted(offer):
+        """
+        Offer accepted (direct or via proposal)
+        Notify carrier
+        """
+        if not offer.carrier:
+            return
+
+        NotificationService.create(
+            user=offer.carrier,
+            type=Notification.Type.PROPOSAL_ACCEPTED,
+            title="You Got the Job 🎉",
+            message=f"You were selected for {offer.code}",
+            content_object=offer
+        )

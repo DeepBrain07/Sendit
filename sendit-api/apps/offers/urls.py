@@ -1,7 +1,12 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from . import views
 
+router = DefaultRouter()
+router.register(r"proposals", views.ProposalViewSet, basename="proposal")
+
 urlpatterns = [
+    path("", include(router.urls)),
 
     # 🟢 LSIT/ CREATE OFFER (entry point)
     path("", views.OfferListCreateView.as_view(), name="offer-list-create"),
@@ -19,4 +24,7 @@ urlpatterns = [
 
     # 🔁 TRANSITIONS (state changes)
     path("<uuid:pk>/transition/", views.OfferTransitionView.as_view(), name="offer-transition"),
+
+    # 💰 CHECKOUT
+    path("<uuid:pk>/checkout/", views.OfferCheckoutView.as_view(), name="offer-checkout"),
 ]

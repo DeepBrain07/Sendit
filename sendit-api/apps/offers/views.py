@@ -1,4 +1,6 @@
 
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.generics import ListCreateAPIView
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -9,13 +11,15 @@ from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import PermissionDenied,  ValidationError
 
 
-from .models import Offer
+from .models import Offer, Proposal
 from .services.step_service import OfferStepService
 from apps.offers.services.offer_service import OfferService
 from apps.offers.services.status_service import OfferStatusService
+from apps.offers.services.proposal_service import ProposalService
+from apps.payments.services.payment_service import PaymentService
 from .serializers import  (OfferCreateSerializer, OfferListSerializer,
 OfferDetailsSerializer,OfferLocationSerializer,OfferPricingSerializer, 
-OfferTransitionSerializer,OfferSerializer)
+OfferTransitionSerializer,OfferSerializer, ProposalSerializer, ProposalStatusSerializer)
 from .documentation.offers.schemas import (offer_list_create_doc, offer_step_details_doc, offer_location_doc, 
                                            offer_pricing_doc, offer_review_doc, offer_transition_doc, offer_detail_doc)
 
@@ -248,6 +252,7 @@ class OfferReviewView(APIView):
             "data": serializer.data
         })
 
+
 @offer_transition_doc
 class OfferTransitionView(APIView):
 
@@ -282,6 +287,31 @@ class OfferTransitionView(APIView):
                 "message": str(e)
             }, status=400)
 
+class OfferCheckoutView(APIView):
+    """
+    Endpoint to initiate payment for an offer.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        offer = get_object_or_404(Offer, pk=pk)
+        try:
+            payment_info = PaymentService.initiate_payment(offer, request.user)
+            return Response({
+                "success": True,
+                "data": {
+                    "transaction_id": payment_info["transaction"].id,
+                    "tx_ref": payment_info["transaction"].tx_ref,
+                    "payment_url": payment_info["payment_url"],
+                    "payment_token": payment_info["payment_token"]
+                }
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({
+                "success": False,
+                "message": str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+
 @offer_detail_doc
 class OfferView(APIView):
     permission_classes = [IsAuthenticated]
@@ -295,3 +325,53 @@ class OfferView(APIView):
             "success": True,
             "data": serializer.data
         })
+
+class ProposalViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for Proposal management
+    - Carriers can create proposals for posted offers
+    - Senders can see proposals for their offers
+    - Senders can accept a proposal
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = ProposalSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        # Senders see proposals for their offers
+        # Carriers see their own proposals
+        return Proposal.objects.filter(
+            Q(offer__sender=user) | Q(carrier=user)
+        ).select_related("offer", "carrier", "carrier__profile")
+
+    def create(self, request, *args, **kwargs):
+        """
+        Carrier bids for an offer
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        offer = serializer.validated_data["offer"]
+
+        try:
+            proposal = ProposalService.create_proposal(
+                offer=offer,
+                carrier=request.user,
+                price=serializer.validated_data["price"],
+                message=serializer.validated_data.get("message", "")
+            )
+            return Response(ProposalSerializer(proposal).data, status=status.HTTP_201_CREATED)
+        except ValidationError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=["post"], url_path="accept")
+    def accept(self, request, pk=None):
+        """
+        Sender accepts a carrier's proposal
+        """
+        proposal = self.get_object()
+        try:
+            ProposalService.accept_proposal(proposal, request.user)
+            return Response({"message": "Proposal accepted successfully"}, status=status.HTTP_200_OK)
+        except ValidationError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

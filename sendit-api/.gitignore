@@ -1,6 +1,5 @@
 .idea
 venv/
-/.env
 .env
 db.sqlite3
 image/

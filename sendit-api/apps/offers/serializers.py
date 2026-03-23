@@ -1,4 +1,4 @@
-from .models import Offer
+from .models import Offer, Proposal
 from  rest_framework import serializers
 from apps.core.services.media_service import MediaService
 from apps.core.models import Location
@@ -145,5 +145,30 @@ class OfferSerializer(serializers.ModelSerializer):
     def get_image(self, obj):
         image = obj.image
         return MediaSerializer(image).data if image else None
+
+
+class ProposalSerializer(serializers.ModelSerializer):
+    # we need to import it here to avoid circular imports
+    carrier_detail = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = Proposal
+        fields = ["id", "offer", "carrier", "carrier_detail", "price", "message", "status"]
+        read_only_fields = ["id", "carrier", "status"]
+
+    def get_carrier_detail(self, obj):
+        from apps.account.serializers import ProfileSerializer
+        return ProfileSerializer(obj.carrier.profile).data
+
+
+class ProposalStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Proposal
+        fields = ["status"]
+        read_only_fields = ["status"]
+
+    def validate(self, attrs):
+        # Additional validation can be added here if needed
+        return attrs
 
 

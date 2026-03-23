@@ -27,6 +27,8 @@ first_version = [
     path("", include("apps.core.urls")),
     path('users/', include('apps.account.urls')),
     path('offers/', include('apps.offers.urls')),
+    path('payments/', include('apps.payments.urls')),
+    path('payouts/', include('apps.payouts.urls')),
 ]
 
 urlpatterns = [
