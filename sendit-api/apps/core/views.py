@@ -36,7 +36,10 @@ class NotificationListView(ReadOnlyModelViewSet):
         return NotificationSerializer
 
     def get_queryset(self):
+<<<<<<< HEAD
         # Only show notifications for the current user
+=======
+>>>>>>> d92be44 (accept restructure file)
         return Notification.objects.filter(user=self.request.user)
 
     def list(self, request, *args, **kwargs):

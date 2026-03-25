@@ -29,7 +29,6 @@ from apps.account.documentation.account.schemas import google_login_doc, google_
 from apps.account.utils import send_login_or_logout_email
 >>>>>>> e534574 (Initial clean commit)
 
-
 User = get_user_model()
 
 @google_login_doc
@@ -191,4 +190,7 @@ class GoogleAuthConfig(APIView):
         return Response({
             'client_id': settings.GOOGLE_CLIENT_ID,
         }, status=status.HTTP_200_OK)
+<<<<<<< HEAD
 >>>>>>> e534574 (Initial clean commit)
+=======
+>>>>>>> d92be44 (accept restructure file)

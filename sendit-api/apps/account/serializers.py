@@ -177,19 +177,17 @@ class VerificationSerializer(serializers.ModelSerializer):
         verification = Verification.objects.create(profile=profile, **validated_data)
 
         if document:
-            # FIX: Using .pk
             MediaService.attach_file(document, verification, tag='document')
         else:
             raise serializers.ValidationError({"document": "This field is required."})
 
         if selfie:
-            # FIX: Using .pk
             MediaService.attach_file(selfie, verification, tag='selfie')
         else:
             raise serializers.ValidationError({"selfie": "This field is required."})
 
         return verification
-    
+
     def update(self, instance, validated_data):
         document_file = validated_data.pop('document', None)
         selfie_file = validated_data.pop('selfie', None)
