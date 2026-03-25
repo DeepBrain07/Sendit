@@ -36,48 +36,47 @@ class OfferStatusService:
             return cls._dispute(offer, user)
 
         raise ValidationError("Invalid action")
-    
-  
+
     @staticmethod
     def _post(offer, user):
-      if offer.sender != user:
-          raise ValidationError("Not your offer")
+        if offer.sender != user:
+            raise ValidationError("Not your offer")
 
-      if offer.status != Offer.Status.DRAFT:
-          raise ValidationError("Only draft can be posted")
+        if offer.status != Offer.Status.DRAFT:
+            raise ValidationError("Only draft can be posted")
 
-      offer.status = Offer.Status.POSTED
-      offer.current_step = Offer.Step.POSTED
-      offer.is_complete()
-      offer.save()
+        offer.status = Offer.Status.POSTED
+        offer.current_step = Offer.Step.POSTED
+        offer.is_complete()
+        offer.save()
 
-      OfferService.handle_offer_posted(offer)
+        OfferService.handle_offer_posted(offer)
 
-      return offer
-    
+        return offer
+
     @staticmethod
     def _accept(offer, user):
 
-      if getattr(user, "type", None) != "carrier":
-          raise ValidationError("Only carriers can accept")
+        if getattr(user, "type", None) != "carrier":
+            raise ValidationError("Only carriers can accept")
 
-      with transaction.atomic():
-          offer = Offer.objects.select_for_update().get(pk=offer.pk)
+        with transaction.atomic():
+            offer = Offer.objects.select_for_update().get(pk=offer.pk)
 
-          if offer.status != Offer.Status.POSTED:
-              raise ValidationError("Offer not available")
+            if offer.status != Offer.Status.POSTED:
+                raise ValidationError("Offer not available")
 
-          if offer.carrier:
-              raise ValidationError("Offer already accepted")
+            if offer.carrier:
+                raise ValidationError("Offer already accepted")
 
-          offer.carrier = user
-          offer.status = Offer.Status.ACCEPTED
-          offer.save()
+            offer.carrier = user
+            offer.status = Offer.Status.ACCEPTED
+            offer.save()
 
-      OfferService.handle_offer_accepted(offer)
+        OfferService.handle_offer_accepted(offer)
 
-      return offer
-    
+        return offer
+
     @staticmethod
     def _start_transit(offer, user):
         if offer.carrier != user:
@@ -90,7 +89,6 @@ class OfferStatusService:
         offer.save()
 
         return offer
-    
     @staticmethod
     def _deliver(offer, user):
         if offer.carrier != user:
@@ -109,26 +107,27 @@ class OfferStatusService:
                 escrow.mark_release_ready()
             except Exception as e:
                 # Log that escrow couldn't be updated
-                print(f"Error updating escrow status for offer {offer.code}: {e}")
+                print(
+                    f"Error updating escrow status for offer {offer.code}: {e}")
 
         return offer
 
     @staticmethod
     def _cancel(offer, user):
 
-      if offer.sender != user:
-          raise ValidationError("Only sender can cancel")
+        if offer.sender != user:
+            raise ValidationError("Only sender can cancel")
 
-      if offer.status not in [
-          Offer.Status.POSTED,
-          Offer.Status.ACCEPTED
-      ]:
-          raise ValidationError("Cannot cancel at this stage")
+        if offer.status not in [
+            Offer.Status.POSTED,
+            Offer.Status.ACCEPTED
+        ]:
+            raise ValidationError("Cannot cancel at this stage")
 
-      offer.status = Offer.Status.CANCELLED
-      offer.save()
+        offer.status = Offer.Status.CANCELLED
+        offer.save()
 
-      return offer
+        return offer
 
     @staticmethod
     def _dispute(offer, user):
@@ -149,4 +148,3 @@ class OfferStatusService:
                 print(f"Error updating escrow for dispute: {e}")
 
         return offer
-

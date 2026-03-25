@@ -23,6 +23,8 @@ OfferTransitionSerializer,OfferSerializer, ProposalSerializer, ProposalStatusSer
 from .documentation.offers.schemas import (offer_list_create_doc, offer_step_details_doc, offer_location_doc, 
                                            offer_pricing_doc, offer_review_doc, offer_transition_doc, offer_detail_doc)
 
+from .permissions import IsSender
+
 @offer_list_create_doc
 class OfferListCreateView(ListCreateAPIView):
     """
@@ -255,8 +257,7 @@ class OfferReviewView(APIView):
 
 @offer_transition_doc
 class OfferTransitionView(APIView):
-
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsSender]
 
     def post(self, request, pk):
         offer = get_object_or_404(Offer, pk=pk)
@@ -291,7 +292,8 @@ class OfferCheckoutView(APIView):
     """
     Endpoint to initiate payment for an offer.
     """
-    permission_classes = [IsAuthenticated]
+
+    permission_classes = [IsSender]
 
     def post(self, request, pk):
         offer = get_object_or_404(Offer, pk=pk)

@@ -1,7 +1,10 @@
 .idea
 venv/
 /.env
+<<<<<<< HEAD
 .env
+=======
+>>>>>>> 66c2eb10153c34363e35759948637316fc4d78ca
 db.sqlite3
 image/
 media/

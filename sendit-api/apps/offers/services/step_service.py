@@ -4,6 +4,8 @@ from ..models import Offer
 from .offer_service import OfferService
 from apps.core.models import Location
 from apps.core.services.media_service import MediaService
+
+
 class OfferStepService:
 
     STEP_ORDER = [

@@ -2,22 +2,21 @@ from django.db import models
 
 # Create your models here.
 
-
 class Transaction(models.Model):
-
     class Status(models.TextChoices):
         INITIATED = "initiated", "Initiated"
         SUCCESS = "success", "Success"
         FAILED = "failed", "Failed"
 
-    offer = models.OneToOneField(
-        "offers.Offer",
+    wallet = models.ForeignKey(
+        "wallets.Wallet",
         on_delete=models.CASCADE,
-        related_name="transaction"
+        related_name="transactions"
     )
 
     tx_ref = models.CharField(max_length=100, unique=True)
-
+    # 🔥 NEW (for idempotency)
+    external_id = models.CharField(max_length=150, unique=True, null=True, blank=True)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
 
     status = models.CharField(max_length=20, choices=Status.choices)

@@ -28,7 +28,12 @@ first_version = [
     path('users/', include('apps.account.urls')),
     path('offers/', include('apps.offers.urls')),
     path('payments/', include('apps.payments.urls')),
+<<<<<<< HEAD
     path('payouts/', include('apps.payouts.urls')),
+=======
+    path("", include('apps.wallets.urls')),
+    # path('payouts/', include('apps.payouts.urls')),
+>>>>>>> 66c2eb10153c34363e35759948637316fc4d78ca
 ]
 
 urlpatterns = [

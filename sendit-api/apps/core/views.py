@@ -1,12 +1,12 @@
 from rest_framework.viewsets import ReadOnlyModelViewSet, ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema # Add this for better docs
 from apps.core.pagination import NotificationPagination
 from apps.core.serializers import NotificationListSerializer, NotificationSerializer
 from .serializers import MediaSerializer
-from .models import Media, Notification
+from .models import Media,Notification
 from .services.cloudinary_service import CloudinaryService
+
 
 class MediaViewSet(ModelViewSet):
     queryset = Media.objects.all()
@@ -36,12 +36,8 @@ class NotificationListView(ReadOnlyModelViewSet):
         return NotificationSerializer
 
     def get_queryset(self):
-        # Only show notifications for the current user
-        # Note: In production, the schema generator uses the 'queryset' attribute above,
-        # but the actual API calls use this filtered version.
         return Notification.objects.filter(user=self.request.user)
 
-    @extend_schema(responses={200: NotificationListSerializer(many=True)})
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
 

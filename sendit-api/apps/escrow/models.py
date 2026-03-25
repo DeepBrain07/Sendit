@@ -1,6 +1,8 @@
 from django.db import models
+from django.utils import timezone
+from django.conf import settings
 
-# Create your models here.
+User = settings.AUTH_USER_MODEL
 
 
 class Escrow(models.Model):
@@ -20,88 +22,33 @@ class Escrow(models.Model):
         related_name="escrow"
     )
 
-    transaction = models.OneToOneField(
-        "payments.Transaction",
-        on_delete=models.CASCADE,
-        related_name="escrow"
-    )
-
     amount = models.DecimalField(max_digits=12, decimal_places=2)
-
     status = models.CharField(max_length=20, choices=Status.choices)
+
+    # in case of dispute
+    released_amount_to_carrier = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    # admin in that release fund
+    released_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="released_escrows",
+    )
 
     is_released = models.BooleanField(default=False)
     released_at = models.DateTimeField(null=True, blank=True)
-
     created_at = models.DateTimeField(auto_now_add=True)
 
-    # 🔥 STATE METHODS
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status"]),
+            models.Index(fields=["offer"])
+        ]
 
-    def mark_funded(self):
-        if self.status != self.Status.PENDING:
-            return
+    def __str__(self):
+        return f"Escrow {self.id} for Offer {self.offer.id}"
 
-        self.status = self.Status.FUNDED
-        self.save(update_fields=["status"])
-
-    def lock(self):
-        if self.status != self.Status.FUNDED:
-            raise ValueError("Escrow must be funded first")
-
-        self.status = self.Status.LOCKED
-        self.save(update_fields=["status"])
-
-    def mark_release_ready(self):
-        if self.status != self.Status.LOCKED:
-            raise ValueError("Escrow must be locked")
-
-        self.status = self.Status.RELEASE_READY
-        self.save(update_fields=["status"])
-
-    def release(self):
-        if self.status != self.Status.RELEASE_READY:
-            raise ValueError("Not ready for release")
-
-
-        self.status = self.Status.RELEASED
-        self.is_released = True
-        self.released_at = timezone.now()
-
-        self.save(update_fields=["status", "is_released", "released_at"])
-
-    def cancel(self):
-        if self.status == self.Status.RELEASED:
-            raise ValueError("Cannot cancel released escrow")
-
-        self.status = self.Status.CANCELLED
-        self.save(update_fields=["status"])
-
-    def dispute(self):
-        if self.status not in [self.Status.LOCKED, self.Status.RELEASE_READY]:
-            raise ValueError("Only locked or release_ready escrow can be disputed")
-
-        self.status = self.Status.DISPUTED
-        self.save(update_fields=["status"])
-
-
-class LedgerEntry(models.Model):
-
-    class EntryType(models.TextChoices):
-        CREDIT = "credit", "Credit"
-        DEBIT = "debit", "Debit"
-
-    escrow = models.ForeignKey(
-        "escrow.Escrow",
-        on_delete=models.CASCADE,
-        related_name="entries"
-    )
-
-    entry_type = models.CharField(max_length=10, choices=EntryType.choices)
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
-
-    note = models.CharField(max_length=255, blank=True)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-
-
-
+    

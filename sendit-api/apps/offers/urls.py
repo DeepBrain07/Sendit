@@ -6,9 +6,14 @@ router = DefaultRouter()
 router.register(r"proposals", views.ProposalViewSet, basename="proposal")
 
 urlpatterns = [
+<<<<<<< HEAD
     path("", include(router.urls)),
 
     # 🟢 LSIT/ CREATE OFFER (entry point)
+=======
+
+    # 🟢 lISTT/ CREATE OFFER (entry point)
+>>>>>>> 66c2eb10153c34363e35759948637316fc4d78ca
     path("", views.OfferListCreateView.as_view(), name="offer-list-create"),
 
     # 🔍 SINGLE OFFER
@@ -27,4 +32,9 @@ urlpatterns = [
 
     # 💰 CHECKOUT
     path("<uuid:pk>/checkout/", views.OfferCheckoutView.as_view(), name="offer-checkout"),
+<<<<<<< HEAD
+=======
+
+    path("", include(router.urls)),
+>>>>>>> 66c2eb10153c34363e35759948637316fc4d78ca
 ]
