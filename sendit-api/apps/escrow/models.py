@@ -1,6 +1,4 @@
 from django.db import models
-
-# Create your models here.
 from django.utils import timezone
 from django.conf import settings
 
@@ -53,5 +51,3 @@ class Escrow(models.Model):
     def __str__(self):
         return f"Escrow {self.id} for Offer {self.offer.id}"
 
-
-    

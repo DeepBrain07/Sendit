@@ -28,7 +28,11 @@ from ..utils import OTPService, send_email_with_url
 from ..permissions import IsAnonymous, IsProfileOwnerOrAdmin
 from ..models import Profile
 from apps.core.models import Media
+<<<<<<< HEAD
 from apps.wallets.services.wallet_services import WalletService
+=======
+
+>>>>>>> e534574 (Initial clean commit)
 
 User = get_user_model()
 
@@ -206,10 +210,13 @@ class LoginView(GenericAPIView):
             serializer.is_valid(raise_exception=True)
             user = self.login_user(serializer.validated_data)
 
+<<<<<<< HEAD
             #create wallet for user if not exists
             wallet = WalletService.create_wallet_account(user)
             print(f"[token login] wallet {wallet.virtual_account_bank, wallet.id,wallet.virtual_account_number}")
 
+=======
+>>>>>>> e534574 (Initial clean commit)
             serializer = UserSerializer(user)
 
             data = {

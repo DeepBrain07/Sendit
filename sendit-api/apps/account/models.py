@@ -114,7 +114,7 @@ class Profile(LifecycleModelMixin, models.Model):
     
     @property
     def full_name(self):
-        return f'{self.first_name} {self.middle_name} {self.last_name}'
+        return f'{self.first_name} {self.last_name}'
 
     @property
     def avatar(self):
@@ -128,21 +128,16 @@ class Profile(LifecycleModelMixin, models.Model):
         return f'{self.user.email} profile'
     
     def get_age(self) -> int:
-        '''Calculate the user age using the current date and date of birth'''
-        dob = self.date_of_birth
-        if dob:
+        """Calculates age from date_of_birth."""
+        if self.date_of_birth:
             today = now().date()
-            age = today.year - dob.year - (
-                (today.month, today.day) < (dob.month, dob.day)
+            return today.year - self.date_of_birth.year - (
+                (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day)
             )
-            return age
-        return dob
+        return None
     
     def delete(self, *args, **kwargs):
-        """
-        Deletes the associated user, which will automatically delete this profile
-        due to the on_delete=models.CASCADE setting.
-        """
+        """Ensures the User is deleted alongside the Profile."""
         try:
             user = CustomUser.objects.get(id=self.user_id)
             return user.delete()

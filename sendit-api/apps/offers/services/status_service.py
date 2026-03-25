@@ -36,7 +36,6 @@ class OfferStatusService:
             return cls._dispute(offer, user)
 
         raise ValidationError("Invalid action")
-
   
     @staticmethod
     def _post(offer, user):

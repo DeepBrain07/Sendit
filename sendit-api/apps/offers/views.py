@@ -22,7 +22,11 @@ OfferDetailsSerializer,OfferLocationSerializer,OfferPricingSerializer,
 OfferTransitionSerializer,OfferSerializer, ProposalSerializer, ProposalStatusSerializer)
 from .documentation.offers.schemas import (offer_list_create_doc, offer_step_details_doc, offer_location_doc, 
                                            offer_pricing_doc, offer_review_doc, offer_transition_doc, offer_detail_doc)
+<<<<<<< HEAD
 from .permissions import IsSender
+=======
+
+>>>>>>> e534574 (Initial clean commit)
 @offer_list_create_doc
 class OfferListCreateView(ListCreateAPIView):
     """
@@ -256,8 +260,12 @@ class OfferReviewView(APIView):
 @offer_transition_doc
 class OfferTransitionView(APIView):
 
+<<<<<<< HEAD
     permission_classes = [IsSender]
 
+=======
+    permission_classes = [IsAuthenticated]
+>>>>>>> e534574 (Initial clean commit)
 
     def post(self, request, pk):
         offer = get_object_or_404(Offer, pk=pk)
@@ -288,12 +296,19 @@ class OfferTransitionView(APIView):
                 "message": str(e)
             }, status=400)
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> e534574 (Initial clean commit)
 class OfferCheckoutView(APIView):
     """
     Endpoint to initiate payment for an offer.
     """
+<<<<<<< HEAD
     permission_classes = [IsSender]
+=======
+    permission_classes = [IsAuthenticated]
+>>>>>>> e534574 (Initial clean commit)
 
     def post(self, request, pk):
         offer = get_object_or_404(Offer, pk=pk)

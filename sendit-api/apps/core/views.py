@@ -12,6 +12,7 @@ class MediaViewSet(ModelViewSet):
     queryset = Media.objects.all()
     serializer_class = MediaSerializer
     permission_classes = [IsAuthenticated]
+    lookup_field = 'id' # Helps clarify UUID usage in docs
 
     def perform_destroy(self, instance):
         # 🔥 delete from cloudinary first
@@ -21,9 +22,12 @@ class MediaViewSet(ModelViewSet):
 
 
 class NotificationListView(ReadOnlyModelViewSet):
+    # Fix 1: Provide a base queryset and lookup_field for schema generation
+    queryset = Notification.objects.all() 
+    lookup_field = 'id'
+    
     serializer_class = NotificationSerializer
     permission_classes = [IsAuthenticated]
-    pagination_class = None  # Optional: add PageNumberPagination
     pagination_class = NotificationPagination
 
     def get_serializer_class(self):

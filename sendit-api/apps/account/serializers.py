@@ -65,31 +65,21 @@ class UserSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        ''''Turn is_active to false, activation as means of validating user email'''
-        user = User.objects.create_user(is_active=False, **validated_data)
-        return user
-
+        return User.objects.create_user(is_active=False, **validated_data)
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(max_length=30, write_only=True)
 
     def validate(self, attrs):
-        email = attrs.get('email')
-        password = attrs.get('password')
-
-        if email and password:
-            user = User.objects.filter(email=email).first()
-            if user:
-                if user.check_password(password):
-                    return attrs
-            raise serializers.ValidationError('Invalid Email or password!')
-        raise serializers.ValidationError('Email or Password are required!')
-
+        email, password = attrs.get('email'), attrs.get('password')
+        user = User.objects.filter(email=email).first()
+        if user and user.check_password(password):
+            return attrs
+        raise serializers.ValidationError('Invalid Email or password!')
 
 class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()
-
 
 class PhoneOTPSerializer(serializers.Serializer):
     phone_number = serializers.CharField(max_length=20)
@@ -182,19 +172,18 @@ class VerificationSerializer(serializers.ModelSerializer):
         profile = self.context['request'].user.profile
 
         if Verification.objects.filter(profile=profile, is_verified=False).exists():
-            raise serializers.ValidationError(
-                "You already have a pending verification")
+            raise serializers.ValidationError("You already have a pending verification")
 
-        verification = Verification.objects.create( **validated_data)
-        print('media verification image:', document)
-        print('media verification image:', document.content_type)
+        verification = Verification.objects.create(profile=profile, **validated_data)
 
         if document:
+            # FIX: Using .pk
             MediaService.attach_file(document, verification, tag='document')
         else:
             raise serializers.ValidationError({"document": "This field is required."})
 
         if selfie:
+            # FIX: Using .pk
             MediaService.attach_file(selfie, verification, tag='selfie')
         else:
             raise serializers.ValidationError({"selfie": "This field is required."})
@@ -224,12 +213,6 @@ class ReviewVerificationSerializer(serializers.ModelSerializer):
         fields = ['is_verified', 'note']
 
     def validate(self, attrs):
-        is_verified = attrs.get('is_verified')
-        note = attrs.get('note', '').strip() if attrs.get('note') else ''
-
-        # Require note if un-verifying
-        if is_verified is False and not note:
-            raise serializers.ValidationError({
-                'note': 'You must provide a note when un-verifying a member.'
-            })
+        if attrs.get('is_verified') is False and not attrs.get('note', '').strip():
+            raise serializers.ValidationError({'note': 'You must provide a note when un-verifying.'})
         return attrs
