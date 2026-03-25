@@ -55,7 +55,11 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS= [
     "apps.core",
     "apps.account",
-    "apps.offers"
+    "apps.offers",
+    "apps.wallets",
+    "apps.escrow",
+    "apps.payments",
+    "apps.payouts"
 ]
 
 INSTALLED_APPS =DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -280,5 +284,9 @@ OFFER_URGENT_FEE = os.getenv("OFFER_URGENT_FEE", 1000)
 # Interswitch Settings
 INTERSWITCH_CLIENT_ID = os.getenv("INTERSWITCH_CLIENT_ID")
 INTERSWITCH_CLIENT_SECRET = os.getenv("INTERSWITCH_CLIENT_SECRET")
-INTERSWITCH_BASE_URL = os.getenv("INTERSWITCH_BASE_URL", "https://sandbox.interswitchng.com/api/v3")
+INTERSWITCH_MERCHANT_CODE = os.getenv("INTERSWITCH_MERCHANT_CODE")
+
+
+INTERSWITCH_BASE_URL = os.getenv("INTERSWITCH_BASE_URL", "https://qa.interswitchng.com") 
 INTERSWITCH_CALLBACK_URL = os.getenv("INTERSWITCH_CALLBACK_URL", f"{FRONTEND_URL}/payments/callback")
+

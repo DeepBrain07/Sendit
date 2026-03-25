@@ -46,14 +46,10 @@ class OfferService:
                 pickup_location,
                 profile.location
             )
-            print(f"[offerservices]:2 pickuploc{pickup_location.latitude, pickup_location.longitude}, \
-                  closeloc {profile.location.latitude, profile.location.longitude}   ")
-
+           
             radius = cls.DEFAULT_RADIUS_KM
-            print(f"[offerservices]:2 distance from harvesine: {distance} radius{radius}")
 
             if distance and distance <= radius:
-                print(f"[offerservices]:last distance from harvesine: {distance, radius}")
                 nearby.append(profile.user)
 
         print(f"[offerservices]:3 {[user.email for user in nearby]}")

@@ -10,6 +10,8 @@ from rest_framework.throttling import ScopedRateThrottle
 from apps.account.serializers import UserSerializer, GoogleLoginSerializer
 from apps.account.documentation.account.schemas import google_login_doc, google_auth_config_doc
 from apps.account.utils import send_login_or_logout_email
+from apps.wallets.services.wallet_services import WalletService
+
 
 User = get_user_model()
 
@@ -75,6 +77,7 @@ class GoogleLogin(APIView):
             user.is_active = True
             user.save()
             user.create_profile()
+            WalletService.create_wallet_account(user)
         send_login_or_logout_email(user, request,'login')
 
 

@@ -9,7 +9,7 @@ class NotificationService:
     """
 
     @staticmethod
-    def create_notification(user, type, title, message, content_object=None):
+    def create(user, type, title, message, content_object=None):
         
         """
         from core.services.notification_service import NotificationService

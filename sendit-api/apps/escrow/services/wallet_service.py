@@ -1,7 +1,5 @@
 from apps.escrow.models import Escrow,LedgerEntry
-
 from django.db.models import Sum
-
 
 class WalletService:
 
