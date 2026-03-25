@@ -6,11 +6,8 @@ db.sqlite3
 image/
 media/
 
-<<<<<<< HEAD
-=======
 /sendit-api/restclient/*
 
->>>>>>> e534574 (Initial clean commit)
 # ✅ Django: Ignore all migration files EXCEPT __init__.py
 **/migrations/*
 !**/migrations/__init__.py
