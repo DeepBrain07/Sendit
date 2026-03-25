@@ -79,7 +79,7 @@ export const FaceCapture: React.FC<FaceCaptureProps> = ({ setStep, setFaceData, 
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 p-6 flex items-center z-20">
         <button 
-          onClick={() => setStep(4)}
+          onClick={() => {setStep(4); onClose();}}
           className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg"
         >
           <Icon icon="solar:arrow-left-linear" className="text-black text-xl" />

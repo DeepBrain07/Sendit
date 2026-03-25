@@ -48,17 +48,17 @@ const VerifyLayout = () => {
         }
 
         /**
-         * 1. Update Profile (Phone & Avatar)
+         * 1. Update Profile (Phone, Avatar, and Onboarding Status)
          */
         const profileFormData = new FormData();
         profileFormData.append('phone_number', phone);
         profileFormData.append('type', 'carrier');
+        // Now that this field is on the Profile model, we send it here
         profileFormData.append('is_new_user', "false"); 
         
         const base64Image = faceData.image || faceData; 
         if (base64Image && typeof base64Image === 'string') {
           const imageFile = dataURLtoFile(base64Image, `avatar_${userId}.jpg`);
-          // Use 'image' as key to match ProfileSerializer
           profileFormData.append('image', imageFile);
         }
 
@@ -69,10 +69,10 @@ const VerifyLayout = () => {
 
         /**
          * 2. Create Verification Record (ID details)
+         * Note: Ensure this hits your Verification model endpoint, usually a POST
          */
         if (identificationData) {
           console.log("Submitting Verification Record...");
-          // This should be a POST to your verification endpoint
           await api.patch(`/users/${userId}/profiles/`, {
             verification_type: identificationData.type,
             id_number: identificationData.number,
@@ -81,14 +81,18 @@ const VerifyLayout = () => {
 
         /**
          * 3. Sync Local Storage
-         * Update the stored user object so other parts of the app see the changes
+         * We update the profile data and ensure is_new_user is false 
+         * so the app knows onboarding is complete.
          */
         const updatedUser = {
             ...storedUser,
-            profile: profileResponse.data 
+            profile: {
+                ...profileResponse.data,
+                is_new_user: false // Force local state to false
+            }
         };
         localStorage.setItem('user', JSON.stringify(updatedUser));
-        console.log("✅ Local storage synced and backend updated.");
+        console.log("✅ Onboarding complete. Local storage synced.");
 
         // Move to final step
         setStep(5);
@@ -97,7 +101,6 @@ const VerifyLayout = () => {
         const errorData = error.response?.data;
         console.error("❌ API Error:", errorData || error.message);
         
-        // Handle nested error objects from DRF
         const errorMessage = typeof errorData === 'object' 
           ? Object.values(errorData).flat()[0] 
           : "Could not complete verification. Please check your details.";

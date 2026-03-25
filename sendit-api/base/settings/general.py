@@ -228,6 +228,7 @@ SIMPLE_JWT = {
     'ALGORITHM': 'HS256',
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
+    "TOKEN_OBTAIN_SERIALIZER": "your_app.serializers.MyTokenObtainPairSerializer",
 }
 
 

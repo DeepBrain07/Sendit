@@ -2,6 +2,9 @@ from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from drf_spectacular.utils import extend_schema_field # For fixing documentation warnings
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
 from apps.core.services.media_service import MediaService
 from apps.core.serializers import MediaSerializer, LocationSerializer
 from apps.core.models import Location
@@ -35,10 +38,19 @@ class UserSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
     password = serializers.CharField(max_length=30, write_only=True)
     confirm_password = serializers.CharField(max_length=30, write_only=True)
+    # Nesting the profile allows the frontend to see is_new_user on login
+    profile = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
-        fields = ('id', 'email', 'first_name', 'last_name', 'agree_to_privacy_policy', 'password', 'confirm_password',)
+        fields = ('id', 'email', 'first_name', 'last_name', 'agree_to_privacy_policy', 'password', 'confirm_password', 'profile')
+
+    @extend_schema_field(serializers.JSONField())
+    def get_profile(self, obj):
+        try:
+            return ProfileStatusSerializer(obj.profile).data
+        except:
+            return None
 
     def validate(self, attrs):
         if attrs.get('password') != attrs.get('confirm_password'):
@@ -64,6 +76,15 @@ class LoginSerializer(serializers.Serializer):
             return attrs
         raise serializers.ValidationError('Invalid Email or password!')
 
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        # Include profile status in the JWT response for the frontend
+        user_profile = self.user.profile 
+        data['is_new_user'] = user_profile.is_new_user
+        data['user_id'] = str(self.user.id)
+        return data
+
 class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()
 
@@ -77,7 +98,13 @@ class PhoneSerializer(serializers.Serializer):
 class GoogleLoginSerializer(serializers.Serializer):
     id_token = serializers.CharField()
 
-# --- Profile Serializer ---
+# --- Profile Serializers ---
+
+class ProfileStatusSerializer(serializers.ModelSerializer):
+    """Minimal serializer for login/auth responses."""
+    class Meta:
+        model = Profile
+        fields = ['is_new_user', 'type']
 
 class ProfileSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(required=False, write_only=True)
@@ -89,13 +116,20 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = ('id', 'email', 'first_name', 'type', "image", 'avatar', 'last_name', 'date_of_birth', 'age', 'is_new_user',
-                  'gender', 'bio', 'phone_number', 'phone_verified', "location_details", "location", 'created_at', 'updated_at')
-        read_only_fields = ["phone_verified", "is_verified", "email", "is_new_user"]
+        fields = (
+            'id', 'email', 'first_name', 'type', "image", 'avatar', 'last_name', 
+            'date_of_birth', 'age', 'is_new_user', 'gender', 'bio', 
+            'phone_number', 'phone_verified', "location_details", "location", 
+            'created_at', 'updated_at'
+        )
+        # Note: is_new_user is now read_only here; VerifyLayout will update it.
+        read_only_fields = ["phone_verified", "is_verified", "email",]
 
+    @extend_schema_field(serializers.IntegerField())
     def get_age(self, instance) -> int:
         return instance.get_age()
 
+    @extend_schema_field(MediaSerializer)
     def get_avatar(self, obj):
         avatar = obj.avatar
         return MediaSerializer(avatar).data if avatar else None
@@ -105,11 +139,8 @@ class ProfileSerializer(serializers.ModelSerializer):
         location_data = validated_data.pop("location", None)
 
         if image is not None:
-            # Use .pk here as well to be safe, though 
-            # fixing the MediaService is the root cure.
             MediaService.attach_file(image, instance, tag="avatar")
 
-        # Update location logic...
         if location_data is not None:
             if instance.location:
                 for attr, value in location_data.items():
@@ -118,8 +149,8 @@ class ProfileSerializer(serializers.ModelSerializer):
             else:
                 instance.location = Location.objects.create(**location_data)
 
-        # Standard DRF update logic
         return super().update(instance, validated_data)
+
 # --- Verification Serializers ---
 
 class VerificationSerializer(serializers.ModelSerializer):
@@ -138,12 +169,15 @@ class VerificationSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['is_verified', 'note', 'verified_by', 'verified_at', 'profile']
 
+    @extend_schema_field(MediaSerializer(many=True))
     def get_documents(self, obj):
         return MediaSerializer(obj.documents, many=True).data
 
+    @extend_schema_field(serializers.UUIDField())
     def get_verification_id(self, obj):
         return obj.id 
 
+    @extend_schema_field(MediaSerializer)
     def get_selfie_image(self, obj):
         media = obj.selfie_image
         return MediaSerializer(media).data if media else None
@@ -159,13 +193,11 @@ class VerificationSerializer(serializers.ModelSerializer):
         verification = Verification.objects.create(profile=profile, **validated_data)
 
         if document:
-            # FIX: Using .pk
             MediaService.attach_file(document, verification, tag='document')
         else:
             raise serializers.ValidationError({"document": "This field is required."})
 
         if selfie:
-            # FIX: Using .pk
             MediaService.attach_file(selfie, verification, tag='selfie')
         else:
             raise serializers.ValidationError({"selfie": "This field is required."})
