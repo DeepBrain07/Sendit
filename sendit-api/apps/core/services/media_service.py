@@ -100,11 +100,7 @@ class MediaService:
 
         existing = Media.objects.filter(
             content_type=content_type,
-<<<<<<< HEAD
-            object_id=instance.id
-=======
             object_id=instance.pk
->>>>>>> e534574 (Initial clean commit)
         ).order_by('order')
 
         if existing.count() >= MediaService.MAX_FILES_PER_OBJECT:
@@ -113,11 +109,7 @@ class MediaService:
         if tag in ["avatar", "document", "selfie"]:
             Media.objects.filter(
                 content_type=content_type,
-<<<<<<< HEAD
-                object_id=instance.id,
-=======
                 object_id=instance.pk,
->>>>>>> e534574 (Initial clean commit)
                 tag=tag
             ).delete()  # one of these type can exist for an object
 
@@ -135,11 +127,7 @@ class MediaService:
             file_url=file_url,
             public_id=public_id,
             content_type=content_type,
-<<<<<<< HEAD
-            object_id=instance.id,
-=======
             object_id=instance.pk,
->>>>>>> e534574 (Initial clean commit)
             tag=tag,
             order=order
         )
@@ -212,11 +200,7 @@ class MediaService:
 
         existing_count = Media.objects.filter(
             content_type=content_type,
-<<<<<<< HEAD
-            object_id=instance.id
-=======
             object_id=instance.pk
->>>>>>> e534574 (Initial clean commit)
         ).count()
 
         if existing_count + len(files) > MediaService.MAX_FILES_PER_OBJECT:
@@ -234,18 +218,12 @@ class MediaService:
                 file_url=file_url,
                 public_id=public_id,
                 content_type=content_type,
-<<<<<<< HEAD
-                object_id=instance.id,
-=======
                 object_id=instance.pk,
->>>>>>> e534574 (Initial clean commit)
                 tag="thumbnail" if existing_count == 0 and index == 0 else tag,
                 order=existing_count + index
             )
-
             created.append(media)
 
         return created
 
 
-    

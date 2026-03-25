@@ -1,5 +1,4 @@
 from rest_framework.viewsets import ReadOnlyModelViewSet, ModelViewSet
-# from rest_framework.generics import ListRetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from apps.core.pagination import NotificationPagination
@@ -7,6 +6,7 @@ from apps.core.serializers import NotificationListSerializer, NotificationSerial
 from .serializers import MediaSerializer
 from .models import Media,Notification
 from .services.cloudinary_service import CloudinaryService
+
 
 class MediaViewSet(ModelViewSet):
     queryset = Media.objects.all()
@@ -36,10 +36,6 @@ class NotificationListView(ReadOnlyModelViewSet):
         return NotificationSerializer
 
     def get_queryset(self):
-<<<<<<< HEAD
-        # Only show notifications for the current user
-=======
->>>>>>> d92be44 (accept restructure file)
         return Notification.objects.filter(user=self.request.user)
 
     def list(self, request, *args, **kwargs):

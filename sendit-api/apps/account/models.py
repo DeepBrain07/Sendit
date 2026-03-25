@@ -178,14 +178,14 @@ class Verification(models.Model):
 
     # Generic relation to media handled via MediaService
     @property
-    def documents(self):
+    def documents(self) -> str:
         """
         Return all media files tagged as 'document' linked to this verification.
         """
         return self.media.filter(tag='document') or ""
 
     @property
-    def selfie_image(self):
+    def selfie_image(self) ->str:
         """
         Return media file tagged as 'selfie'.
         """

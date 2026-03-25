@@ -1,6 +1,6 @@
+from rest_framework import permissions, status
 import json
 import logging
-import uuid
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -8,9 +8,9 @@ from apps.payments.services.webhook import WalletFundingWebhookService
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-from apps.wallets.models import  Wallet
-from apps.payments.models import Transaction
+from .services.payment_service import PaymentService
 from apps.wallets.services.wallet_services import WalletService
+from .utils import verify_signature
 
 logger = logging.getLogger(__name__)
 
@@ -49,51 +49,40 @@ class InterswitchWebhookView(APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-def verify_signature(request_body, signature, secret):
-    import hmac, hashlib
+class WebFundingViewSet(APIView):
+    """
+    Handles wallet top-up through web:
+    - Generates transaction
+    - Returns payload for frontend inline payment
+    """
+    permission_classes = [permissions.IsAuthenticated]
 
-    computed = hmac.new(
-        secret.encode(),
-        request_body,
-        hashlib.sha512
-    ).hexdigest()
-
-    return computed == signature
-
-
-class WalletFundingService:
-
-    @staticmethod
-    def create_wallet_funding_payload(user, amount):
+    def post(self, request):
         """
-        Creates a transaction and returns the payload the frontend
-        will use to render the Interswitch payment form.
+        Provide details user can use to make payment (inline form) 
+        and transaction status INITIATED
         """
-        # Ensure wallet exists
-        wallet = WalletService.create_wallet_account(user)
+        amount = request.data.get("amount")
+        user = request.user
 
-        # Create a unique tx_ref per funding attempt
-        tx_ref = f"WEB_{uuid.uuid4().hex[:12]}"
+        if not amount:
+            return Response({"error": "Amount is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Create transaction record (INITIATED)
-        transaction = Transaction.objects.create(
-            tx_ref=tx_ref,
-            wallet=wallet,
-            amount=amount,
-            status=Transaction.Status.INITIATED
-        )
+        wallet = getattr(user, "wallet", None)
+        if not wallet:
+            wallet = WalletService.create_wallet_account(user)
 
-        # Payload frontend can use for form
-        payload = {
-            "tx_ref": tx_ref,  # required by Interswitch
-            "amount": int(amount * 100),  # kobo
-            "currencyCode": "566",
-            "customerId": user.email,
-            "redirectUrl": settings.INTERSWITCH_CALLBACK_URL,
-            "customerName": f"{user.full_name}",
-        }
+        try:
+            transaction, payload = PaymentService.create_funding_payload(
+                user=request.user,
+                amount=float(amount)
+            )
 
-        return {
-            "transaction": transaction,
-            "form_payload": payload
-        }
+            return Response({
+                "message": "Funding initiated",
+                "transaction_id": transaction.id,
+                "form_payload": payload,
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

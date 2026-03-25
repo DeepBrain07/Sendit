@@ -28,15 +28,8 @@ from ..utils import OTPService, send_email_with_url
 from ..permissions import IsAnonymous, IsProfileOwnerOrAdmin
 from ..models import Profile
 from apps.core.models import Media
-<<<<<<< HEAD
-<<<<<<< HEAD
-from apps.wallets.services.wallet_services import WalletService
-=======
 
->>>>>>> e534574 (Initial clean commit)
-=======
 from apps.wallets.services.wallet_services import WalletService
->>>>>>> 65ac594 (feat wallet and escrow valid)
 
 User = get_user_model()
 
@@ -214,19 +207,10 @@ class LoginView(GenericAPIView):
             serializer.is_valid(raise_exception=True)
             user = self.login_user(serializer.validated_data)
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 65ac594 (feat wallet and escrow valid)
             #create wallet for user if not exists
             wallet = WalletService.create_wallet_account(user)
-            print(f"[token login] wallet {wallet.virtual_account_bank, wallet.id,wallet.virtual_account_number}")
+            print(f"[token login] wallet {wallet.virtual_account_bank_number, wallet.id,wallet.virtual_account_number}")
 
-<<<<<<< HEAD
-=======
->>>>>>> e534574 (Initial clean commit)
-=======
->>>>>>> 65ac594 (feat wallet and escrow valid)
             serializer = UserSerializer(user)
 
             data = {
