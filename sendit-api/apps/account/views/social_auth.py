@@ -27,7 +27,12 @@ from apps.account.utils import set_auth_cookies # Import the same utility
 from apps.account.serializers import UserSerializer, GoogleLoginSerializer
 from apps.account.documentation.account.schemas import google_login_doc, google_auth_config_doc
 from apps.account.utils import send_login_or_logout_email
+<<<<<<< HEAD
 >>>>>>> e534574 (Initial clean commit)
+=======
+from apps.wallets.services.wallet_services import WalletService
+
+>>>>>>> 65ac594 (feat wallet and escrow valid)
 
 User = get_user_model()
 
@@ -179,7 +184,7 @@ class GoogleAuthConfig(APIView):
         response = Response(data=data, status=status.HTTP_201_CREATED)
 
         # Use the utility instead of manual set_cookie
-        return set_auth_cookies(response, tokens)
+        return response # set_auth_cookies(response, tokens)
 
 @google_auth_config_doc
 class GoogleAuthConfig(APIView):
@@ -190,7 +195,3 @@ class GoogleAuthConfig(APIView):
         return Response({
             'client_id': settings.GOOGLE_CLIENT_ID,
         }, status=status.HTTP_200_OK)
-<<<<<<< HEAD
->>>>>>> e534574 (Initial clean commit)
-=======
->>>>>>> d92be44 (accept restructure file)

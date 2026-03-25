@@ -51,3 +51,4 @@ class Escrow(models.Model):
     def __str__(self):
         return f"Escrow {self.id} for Offer {self.offer.id}"
 
+    

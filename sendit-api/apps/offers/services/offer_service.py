@@ -3,7 +3,7 @@ from apps.account.models import Profile as UserProfile
 from apps.core.services.geo_service import GeoService
 from apps.core.models import Notification
 
-# NOTIFICATION 
+# NOTIFICATION
 
 class OfferService:
     """
@@ -34,8 +34,9 @@ class OfferService:
         nearby = []
 
         for profile in profiles:
-            print(f"[offerservices]:1 {profile.location.latitude, profile.location.longitude}")
-            
+            print(
+                f"[offerservices]:1 {profile.location.latitude, profile.location.longitude}")
+
             if not profile.location:
                 continue
 
@@ -46,7 +47,7 @@ class OfferService:
                 pickup_location,
                 profile.location
             )
-           
+
             radius = cls.DEFAULT_RADIUS_KM
 
             if distance and distance <= radius:
@@ -60,7 +61,7 @@ class OfferService:
     # -------------------------
 
     @classmethod
-    def get_nearby_offers(cls, offers,user_location, radius_km=10):
+    def get_nearby_offers(cls, offers, user_location, radius_km=10):
 
         # offers = Offer.objects.select_related("pickup_location")
         nearby = []
@@ -88,7 +89,8 @@ class OfferService:
 
     @classmethod
     def handle_offer_posted(cls, offer):
-        print(f"[offerservices]:handle_offer_posted {offer.pickup_location.latitude, offer.pickup_location.longitude}")
+        print(
+            f"[offerservices]:handle_offer_posted {offer.pickup_location.latitude, offer.pickup_location.longitude}")
         carriers = cls.get_nearby_carriers(offer.pickup_location)
 
         if not carriers:

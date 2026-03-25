@@ -7,14 +7,9 @@ class NotificationService:
     offer is ACCEPTED
     (later: cancelled, delivered)
     """
-
     @staticmethod
-<<<<<<< HEAD
     def create(user, type, title, message, content_object=None):
-=======
-    def create_notification(user, type, title, message, content_object=None):
->>>>>>> e534574 (Initial clean commit)
-        
+
         """
         from core.services.notification_service import NotificationService
 
