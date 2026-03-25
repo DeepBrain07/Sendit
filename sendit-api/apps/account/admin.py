@@ -40,6 +40,7 @@ class ProfileAdmin(admin.ModelAdmin):
 @admin.register(Verification)
 class VerificationAdmin(admin.ModelAdmin):
     list_display = ['id', 'profile', 'verification_type', 'is_verified']
+    list_editable = ('is_verified',)
 
     def save_model(self, request, obj, form, change):
         # If verification is approved

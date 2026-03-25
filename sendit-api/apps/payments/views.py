@@ -4,13 +4,15 @@ import logging
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from apps.payments.services.webhook import WalletFundingWebhookService
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-from .services.payment_service import PaymentService
+from apps.payments.services.webhook import PaymentVerifyWebhookService
 from apps.wallets.services.wallet_services import WalletService
+from .services.payment_service import PaymentService
+from apps.payments.serializers import WebFundingPayloadSerializer
 from .utils import verify_signature
+from .documentation.payments.schemas import web_funding_create_payload_doc
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +21,35 @@ logger = logging.getLogger(__name__)
 class InterswitchWebhookView(APIView):
     """
     Webhook endpoint for Interswitch payment notifications.
+    WEB PAYLOAD :
+    {
+        "uuid": "123e4567-e89b-12d3-a456-426614174000",
+        "event": "TRANSACTION.COMPLETED",
+        "data": {
+            "responseCode": "00",
+            "amount": 500000,  // amount in kobo/cents (5000.00 NGN)
+            "channel": "WEB",
+            "merchantReference": "TXN_987654321", `tx_ref we included`
+            "transactionDate": "2026-03-25T10:30:00Z",
+            "customerEmail": "user@example.com"
+        }
+        }
+
+
+        Transfer:
+        {
+        "uuid": "987e6543-e21b-12d3-a456-426614174999",
+        "event": "TRANSACTION.COMPLETED",
+        "data": {
+            "responseCode": "00",
+            "amount": 1000000,  // 10,000.00 NGN
+            "channel": "TRANSFER",
+            "retrievalReferenceNumber": "1234567890",  `account number`
+            "transactionDate": "2026-03-25T12:45:00Z",
+            "payerName": "John Doe",
+            "payerAccount": "0123456789"
+        }
+        }
     """
     authentication_classes = []  # Public endpoint
     permission_classes = []
@@ -41,7 +72,7 @@ class InterswitchWebhookView(APIView):
             if payload.get("event") != "TRANSACTION.COMPLETED":
                 return Response(status=200)
 
-            WalletFundingWebhookService.handle(payload)
+            PaymentVerifyWebhookService.handle(payload)
             return Response(status=status.HTTP_200_OK)
         except Exception as e:
             # Log the error here
@@ -49,13 +80,15 @@ class InterswitchWebhookView(APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-class WebFundingViewSet(APIView):
+@web_funding_create_payload_doc
+class WebFundingPayloadView(APIView):
     """
     Handles wallet top-up through web:
     - Generates transaction
     - Returns payload for frontend inline payment
     """
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = WebFundingPayloadSerializer
 
     def post(self, request):
         """
@@ -80,7 +113,6 @@ class WebFundingViewSet(APIView):
 
             return Response({
                 "message": "Funding initiated",
-                "transaction_id": transaction.id,
                 "form_payload": payload,
             }, status=status.HTTP_200_OK)
 

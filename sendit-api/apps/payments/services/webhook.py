@@ -4,7 +4,7 @@ from apps.core.services.notification_service import NotificationService, Notific
 from apps.wallets.models import Wallet, WalletLedgerEntry
 
 
-class WalletFundingWebhookService:
+class PaymentVerifyWebhookService:
     """
     Service to handle wallet funding webhooks from Interswitch.
     """

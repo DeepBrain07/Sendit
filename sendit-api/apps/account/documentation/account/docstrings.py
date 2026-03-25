@@ -340,3 +340,76 @@ PROFILE_204_RESPONSE = OpenApiExample(
     status_codes=['204'],
     response_only=True
 )
+
+
+# -----------------------------
+# VERIFICATION CREATE
+# -----------------------------
+VERIFICATION_CREATE_201 = OpenApiExample(
+    '201 CREATED',
+    summary='Verification submitted successfully',
+    description='User successfully submits verification details.',
+    value={
+        "id": 1,
+        "document_type": "NIN",
+        "document_number": "12345678901",
+        "is_verified": False,
+        "created_at": "2026-03-25T10:00:00Z"
+    },
+    response_only=True,
+    status_codes=['201']
+)
+
+VERIFICATION_CREATE_400 = OpenApiExample(
+    '400 BAD REQUEST',
+    summary='Invalid verification data',
+    description='Returned when required fields are missing or invalid.',
+    value={"error": "Invalid document details"},
+    response_only=True,
+    status_codes=['400']
+)
+
+# -----------------------------
+# LIST / RETRIEVE
+# -----------------------------
+VERIFICATION_LIST_200 = OpenApiExample(
+    '200 OK',
+    summary='List of verifications',
+    description='Returns verifications (admin sees all, user sees theirs).',
+    value=[
+        {
+            "id": 1,
+            "document_type": "NIN",
+            "is_verified": True
+        }
+    ],
+    response_only=True,
+    status_codes=['200']
+)
+
+# -----------------------------
+# REVIEW
+# -----------------------------
+VERIFICATION_REVIEW_200 = OpenApiExample(
+    '200 OK',
+    summary='Verification reviewed',
+    description='Admin successfully verifies or rejects a verification (when rejecting a note is importance).',
+    value={
+        "message": "Verification reviewed successfully",
+        "is_verified": True,
+        "note": "Valid document",
+        "verified_by": 1,
+        "verified_at": "2026-03-25T12:00:00Z"
+    },
+    response_only=True,
+    status_codes=['200']
+)
+
+VERIFICATION_REVIEW_400 = OpenApiExample(
+    '400 BAD REQUEST',
+    summary='Invalid review payload',
+    description='Returned when review data is invalid.',
+    value={"error": "Invalid review input"},
+    response_only=True,
+    status_codes=['400']
+)

@@ -145,6 +145,8 @@ class VerificationSerializer(serializers.ModelSerializer):
     documents = serializers.SerializerMethodField(read_only=True)
     selfie_image = serializers.SerializerMethodField(read_only=True)
     verification_id = serializers.SerializerMethodField(read_only=True)
+    verified_by = UserSerializer(read_only=True)
+    profile=UserSerializer(read_only=True)
     
     class Meta:
         model = Verification

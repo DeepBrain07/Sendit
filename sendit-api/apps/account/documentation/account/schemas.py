@@ -9,7 +9,8 @@ from apps.account.documentation.account.docstrings import (
     REGISTER_USER_CREATED, REGISTER_USER_BAD_REQUEST, VERIFY_EMAIL_OTP_DESCRIPTION, VERIFY_EMAIL_OTP_FAILURE_RESPONSE,
     VERIFY_EMAIL_OTP_SUCCESS_RESPONSE, VERIFY_EMAIL_OTP_USER_NOT_FOUND_RESPONSE, RESEND_OTP_DESCRIPTION, RESEND_OTP_SUCCESS_RESPONSE,
     RESEND_OTP_NOT_FOUND_RESPONSE, RESEND_OTP_ERROR_RESPONSE, PROFILE_REQUEST,  PROFILE_204_RESPONSE, PROFILE_400_RESPONSE, 
-    PROFILE_404_RESPONSE, TOKEN_REFRESH_200_OK, TOKEN_REFRESH_DESCRIPTION,TOKEN_REFRESH_400_BAD_REQUEST
+    PROFILE_404_RESPONSE, TOKEN_REFRESH_200_OK, TOKEN_REFRESH_DESCRIPTION,TOKEN_REFRESH_400_BAD_REQUEST, 
+    VERIFICATION_LIST_200, VERIFICATION_CREATE_201,VERIFICATION_CREATE_400,VERIFICATION_REVIEW_200,VERIFICATION_REVIEW_400
 )
 
 
@@ -447,91 +448,68 @@ profile_view_doc = extend_schema(
 )
 
 
-verification_viewset_doc = extend_schema(
-    summary="Manage user verification requests",
-    description=(
-        "This endpoint allows users to submit and manage identity verification requests.\n\n"
-        "**User capabilities:**\n"
-        "- Submit verification (with document + selfie)\n"
-        "- View their verification(s)\n"
-        "- Update uploaded files if needed\n\n"
-        "**Admin capabilities:**\n"
-        "- View all verification requests\n"
-        "- Review (approve/reject) a verification using the `/review/` action\n\n"
-        "Each verification includes uploaded documents and a selfie for identity confirmation."
+
+verification_doc = extend_schema_view(
+
+    list=extend_schema(
+        summary="List verifications",
+        description=(
+            "Retrieve verifications. ადმინისტ\n"
+            "- Admin users see all verifications.\n"
+            "- Regular users see only their own."
+        ),
+        responses={200: OpenApiTypes.OBJECT},
+        examples=[VERIFICATION_LIST_200],
+        tags=["Verifications"],
     ),
-    request=VerificationSerializer,
-    responses={
-        200: OpenApiTypes.OBJECT,
-        201: OpenApiTypes.OBJECT,
-        400: OpenApiTypes.OBJECT,
-        403: OpenApiTypes.OBJECT
-    },
-    tags=["Verification"],
-    examples=[
-        # 🔹 CREATE REQUEST
-        OpenApiExample(
-            "Submit Verification",
-            value={
-                "verification_type": "nin",
-                "id_number": "12345678901",
-                "document": "<file>",
-                "selfie": "<image file>"
-            },
-            request_only=True,
-        ),
 
-        # 🔹 SUCCESS RESPONSE
-        OpenApiExample(
-            "Verification Created",
-            value={
-                "id": "uuid",
-                "verification_type": "nin",
-                "id_number": "12345678901",
-                "is_verified": False,
-                "note": None,
-                "created_at": "2026-03-21T12:00:00Z"
-            },
-            response_only=True,
-            status_codes=["201"],
-        ),
+    retrieve=extend_schema(
+        summary="Retrieve a verification",
+        description="Get details of a specific verification by ID.",
+        responses={200: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT},
+        tags=["Verifications"],
+    ),
 
-        # 🔹 UPDATE FILES
-        OpenApiExample(
-            "Update Verification Files",
-            value={
-                "document": "<new file>",
-                "selfie": "<new image>"
-            },
-            request_only=True,
+    create=extend_schema(
+        summary="Submit verification",
+        description=(
+            "Submit verification documents. The verification will be created "
+            "and linked to the authenticated user's profile."
         ),
+        request=VerificationSerializer,
+        responses={201: VerificationSerializer, 400: OpenApiTypes.OBJECT},
+        examples=[VERIFICATION_CREATE_201, VERIFICATION_CREATE_400],
+        tags=["Verifications"],
+    ),
 
-        # 🔹 ERROR: Pending Exists
-        OpenApiExample(
-            "Pending Verification Exists",
-            value={
-                "non_field_errors": [
-                    "You already have a pending verification"
-                ]
-            },
-            response_only=True,
-            status_codes=["400"],
-        ),
+    partial_update=extend_schema(
+        summary="Update verification",
+        description="Partially update a verification record.",
+        request=VerificationSerializer,
+        responses={200: VerificationSerializer},
+        tags=["Verifications"],
+    ),
 
-        # 🔹 LIST RESPONSE
-        OpenApiExample(
-            "List Verifications",
-            value=[
-                {
-                    "id": "uuid",
-                    "verification_type": "passport",
-                    "id_number": "A1234567",
-                    "is_verified": True,
-                    "note": "Approved successfully"
-                }
-            ],
-            response_only=True,
-            status_codes=["200"],
-        ),
-    ]
+    destroy=extend_schema(
+        summary="Delete verification",
+        description="Delete a verification record.",
+        responses={204: OpenApiTypes.OBJECT},
+        tags=["Verifications"],
+    ),
 )
+
+review_verification_doc = extend_schema(
+    summary="Review verification (Admin only)",
+    description=(
+        "Allows an admin to approve or reject a verification.\n\n"
+        "- Sets `is_verified`\n"
+        "- Optionally adds a note(compulsory during un_verified)\n"
+        "- Updates profile verification status automatically"
+    ),
+    request=OpenApiTypes.OBJECT,
+    responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT},
+    examples=[VERIFICATION_REVIEW_200, VERIFICATION_REVIEW_400],
+    tags=["Verifications"],
+)
+
+

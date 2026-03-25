@@ -56,7 +56,7 @@ class NotificationListView(ReadOnlyModelViewSet):
             "results": serializer.data,
             "unread_count": unread_count
         })
-    
+
     def retrieve(self, request, *args, **kwargs):
         notification = self.get_object()
 

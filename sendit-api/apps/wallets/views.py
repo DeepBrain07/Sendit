@@ -30,11 +30,14 @@ class WalletViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=["get"])
     def history(self, request):
+        """
+        history
+        """
         wallet = request.user.wallet
         qs = apply_date_filter(wallet, request)
+        print(f"wallet wallet{wallet} qs{qs}")
 
-        qs = WalletService.get_full_history(qs)
-        data = WalletService.get_full_history(request.user)
+        data = WalletService.get_full_history(qs)
 
         # pagination
         paginator = WalletHistoryPagination()

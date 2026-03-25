@@ -9,7 +9,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 class WalletService:
     @staticmethod
     def create_wallet_account(user):
@@ -62,6 +61,7 @@ class WalletService:
             logging.error(f"[wallet create error] {e}")
             raise Exception(f"Failed to create virtual account: {e}")
 
+
     @staticmethod
     def get_breakdown(user):
 
@@ -95,9 +95,9 @@ class WalletService:
             "total_earned": data["total_earned"] or 0,
         }
 
+
     @staticmethod
     def get_full_history(wallet):
-
         ledger_qs = wallet.ledger_entries.all().values(
             "id",
             "amount",
