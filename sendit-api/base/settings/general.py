@@ -171,8 +171,6 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10,
     'COERCE_DECIMAL_TO_STRING': False,
     'DEFAULT_AUTHENTICATION_CLASSES': (
-            'apps.account.custom_auth.CookieJWTAuthentication',
-            'rest_framework.authentication.SessionAuthentication',  # For browsable API
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
@@ -290,4 +288,3 @@ INTERSWITCH_MERCHANT_CODE = os.getenv("INTERSWITCH_MERCHANT_CODE")
 
 INTERSWITCH_BASE_URL = os.getenv("INTERSWITCH_BASE_URL", "https://qa.interswitchng.com") 
 INTERSWITCH_CALLBACK_URL = os.getenv("INTERSWITCH_CALLBACK_URL", f"{FRONTEND_URL}/payments/callback")
-
