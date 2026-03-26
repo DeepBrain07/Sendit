@@ -8,6 +8,7 @@ import api from "../../api/axios";
 const Homepage = () => {
     const navigate = useNavigate();
     const [selected, setSelected] = useState("");
+    const [offers, setOffers] = useState<any[]>([]); // State for offers
     const [userData, setUserData] = useState<any>(() => {
         try {
             const user = localStorage.getItem('user');
@@ -25,16 +26,28 @@ const Homepage = () => {
                 const response = await api.get("/users/me/");
                 const freshData = response.data.data;
                 setUserData(freshData);
-                // Keep localStorage in sync
                 localStorage.setItem('user', JSON.stringify(freshData));
             } catch (error) {
                 console.error("Failed to refresh user data:", error);
             }
         };
 
+        const fetchOffers = async () => {
+            try {
+                const response = await api.get("/offers/");
+                console.log(response.data);
+                // Adjust based on your API response structure (usually response.data.results or response.data.data)
+                setOffers(response.data.data || response.data.results || []);
+            } catch (error) {
+                console.error("Failed to fetch offers:", error);
+            }
+        };
+
         fetchUserData();
+        fetchOffers();
     }, []);
 
+    console.log("Offers:", offers);
     const avatarUrl = userData?.avatar?.file_url || userData?.profile?.avatar?.file || profileImage;
     const firstName = userData?.first_name || "User";
 
@@ -93,16 +106,23 @@ const Homepage = () => {
                         </div>
                     </div>
 
-                    {/* Recent Activities */}
+                    {/* Recent Activities - Now showing live Offers */}
                     <div className="mt-12 flex flex-col w-full items-start gap-4 !text-black pb-12">
                         <div className="flex items-center justify-between w-full pr-4">
-                            <h2 className="!font-extralight !text-xl">Recent Activities</h2>
-                            <p className="text-primary hover:underline cursor-pointer">See all</p>
+                            <h2 className="!font-extralight !text-xl">Recent Offers</h2>
+                            <p className="text-primary hover:underline cursor-pointer" onClick={() => navigate("/offers")}>See all</p>
                         </div>
                         <div className="flex flex-col w-full gap-4 p-2">
-                            <RecentActivitiesCard carrier={true} displacement="Lagos to Abuja" amount="2200" name="John Doe"/>
-                            <RecentActivitiesCard carrier={false} displacement="Port Harcourt to Kano" amount="2000" name="Jane Smith"/>
-                            <RecentActivitiesCard carrier={true} displacement="Ibadan to Enugu" amount="3500" name="Alice Johnson"/>
+                            {offers.slice(0, 5).map((offer: any) => (
+                                <RecentActivitiesCard 
+                                    key={offer.id}
+                                    carrier={offer.status === 'delivered'} 
+                                    displacement={`${offer.pickup_location?.city} to ${offer.delivery_location?.city}`} 
+                                    amount={offer.total_price} 
+                                    name={offer.sender?.first_name || "Unknown"}
+                                />
+                            ))}
+                            {offers.length === 0 && <p className="text-gray-400 text-sm">No recent activities found.</p>}
                         </div>
                     </div>
                 </div>
@@ -131,13 +151,13 @@ const RecentActivitiesCard = ({ displacement, carrier, amount, name }: { displac
                     <p className="!font-black ">{displacement}</p>
                     <p className="text-left !text-[12px]  !text-black/60">{carrier ? 'Carrier:' : 'Sender:'}: <span className="!text-black">{name}</span></p>
                     <div className="flex gap-1">
-                        <p className="text-left !text-[12px]  !text-black/60">Delivered yesterday</p>
+                        <p className="text-left !text-[12px]  !text-black/60">Delivered recently</p>
                         <Icon icon="lets-icons:check-fill" width={16} className='text-green-500'/>
                     </div>
-                    <p className="w-fit !font-black p-1 px-4 mt-2 hover:border-1 hover:border-primary  rounded-full bg-gray-200">Rate</p>
+                    <p className="w-fit !font-black p-1 px-4 mt-2 hover:border-1 hover:border-primary  rounded-full bg-gray-200">View</p>
                 </div>
             </div>
-            <p className="!font-black">#{amount}</p>
+            <p className="!font-black">₦{amount}</p>
         </div>
     )
 }
