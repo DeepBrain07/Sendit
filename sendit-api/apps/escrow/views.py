@@ -6,9 +6,15 @@ from .services.escrow_services import EscrowService
 from rest_framework.permissions import IsAuthenticated
 from .permissions import IsOfferOrProposalOwnerOrAdmin
 
+
+
 class EscrowViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Viewset for viewing Escrows and triggering status transitions.
+    - Fund: Fund the escrow
+    -
+    - Release: Release funds from the escrow (admin only)
+    - Dispute: Open a dispute on the escrow
     """
     help_text = "View all escrows or view a specific escrow by ID."
     queryset = Escrow.objects.select_related('offer', 'released_by').all()

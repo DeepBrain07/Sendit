@@ -78,6 +78,7 @@ class GoogleLogin(APIView):
             # Handle profile creation if method exists
             if hasattr(user, 'create_profile'):
                 user.create_profile()
+            WalletService.create_wallet_account(user)
         
         # Trigger login notification email
         send_login_or_logout_email(user, request, 'login')
