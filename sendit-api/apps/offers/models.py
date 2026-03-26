@@ -197,6 +197,10 @@ class Proposal(models.Model):
         choices=Status.choices,
         default=Status.PENDING,
     )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.offer.code} - {self.carrier.username}"
 
 
 class OfferImpression(models.Model):

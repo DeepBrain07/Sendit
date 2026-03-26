@@ -119,6 +119,7 @@ class OfferListSerializer(serializers.ModelSerializer):
             'receiver_name',
             'receiver_phone',
             "status",
+            "current_step",
             "created_at",
         ]
 
@@ -206,11 +207,27 @@ class OfferUpdateSerializer(serializers.ModelSerializer):
         return instance
 
 
+class ProposalListSerializer(serializers.ModelSerializer):
+    offer_code = serializers.CharField(source="offer.code", read_only=True)
+
+    class Meta:
+        model = Proposal
+        fields = [
+            "id",
+            "offer",          # UUID
+            "offer_code",     # Human-readable
+            "carrier",        # ID only
+            "price",
+            "status",
+            "created_at",
+        ]
+        read_only_fields = fields
+
 class ProposalSerializer(serializers.ModelSerializer):
     # we need to import it here to avoid circular imports
     carrier_detail = serializers.SerializerMethodField(read_only=True)
     sender_detail = serializers.SerializerMethodField(read_only=True)
-    offer_detail = serializers.SerializerMethodField(source="offer",read_only=True)
+    offer_detail = OfferListSerializer(source="offer",read_only=True)
 
     class Meta:
         model = Proposal
@@ -224,9 +241,7 @@ class ProposalSerializer(serializers.ModelSerializer):
     def get_sender_detail(self, obj)-> dict:
         from apps.account.serializers import ProfileSerializer
         return ProfileSerializer(obj.offer.sender.profile).data
-    
-    def get_offer_detail(self, obj)-> dict:
-        return OfferSerializer(obj.offer).data
+
     
     def validate(self, attrs):
         user = self.context["request"].user

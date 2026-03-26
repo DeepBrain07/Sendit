@@ -28,7 +28,7 @@ class OfferStepService:
             return cls.STEP_ORDER[index + 1]
         except (ValueError, IndexError):
             return current_step
-        
+
     @classmethod
     def _apply_step_data(cls, offer, step, data):
         allowed_fields = None
@@ -38,7 +38,6 @@ class OfferStepService:
             allowed_fields = cls.STEP_FIELDS.get(step, [])
         print(f"[step service] allowed_fields {allowed_fields}")
 
-        print(f"[step service] data{data}")
         media = data.pop("image", None)
         if media:
             MediaService.attach_file(media, offer, tag="thumbnail")

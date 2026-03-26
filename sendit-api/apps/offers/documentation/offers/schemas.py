@@ -163,7 +163,7 @@ offer_review_doc = extend_schema_view(
         tags=['Offers'],
     ),
     patch=extend_schema(
-        summary='Review Offer Before Posting',
+        summary='Patch data to update Offer Before Posting',
         description=(
             "Update the offer before posting. "
             "This endpoint aggregates all steps (details, location, pricing, receiver info). "
