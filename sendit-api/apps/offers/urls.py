@@ -22,14 +22,14 @@ urlpatterns = [
     path("<uuid:pk>/location/", views.OfferLocationView.as_view(), name="offer-location"),
     path("<uuid:pk>/pricing/", views.OfferPricingView.as_view(), name="offer-pricing"),
 
-    # 👀 REVIEW (read-only)
+    # 👀 REVIEW (read-only) POST 
     path("<uuid:pk>/review/", views.OfferReviewView.as_view(), name="offer-review"),
 
     # 🔁 TRANSITIONS (state changes)
     path("<uuid:pk>/transition/", views.OfferTransitionView.as_view(), name="offer-transition"),
 
-    # 💰 CHECKOUT
-    path("<uuid:pk>/checkout/", views.OfferCheckoutView.as_view(), name="offer-checkout"),
+    # # 💰 CHECKOUT
+    # path("<uuid:pk>/checkout/", views.OfferCheckoutView.as_view(), name="offer-checkout"),
 
     path("", include(router.urls)),
 ]

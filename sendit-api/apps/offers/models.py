@@ -98,11 +98,11 @@ class Offer(models.Model):
     # -------------------------
     def calculate_pricing(self):
         if self.base_price is None:
-            return
+            return Decimal(0)
 
         self.platform_fee = self.base_price * Decimal(settings.OFFER_PLATFORM_FEE) # in percentage
         self.urgent_fee = Decimal(settings.OFFER_URGENT_FEE) if self.is_urgent else 0
-        self.total_price = self.base_price + self.urgent_fee 
+        self.total_price = self.base_price + self.urgent_fee + self.platform_fee  
 
     def validate_step(self,step=None):
         """Validate only what is required at current step"""
@@ -127,14 +127,38 @@ class Offer(models.Model):
                 raise ValidationError("Offer is not complete")
 
     def is_complete(self):
-        return all([
-            self.package_type,
-            self.pickup_location,
-            self.delivery_location,
-            self.base_price,
-            self.receiver_name,
-            self.receiver_phone,
-        ])
+        """Check if offer is complete validate and return error"""
+
+        errors = {}
+        if not self.package_type:
+            errors["package_type"] = "Package type is required"
+        if not self.pickup_location or not self.delivery_location:
+            errors["location"] = "Both pickup and delivery locations are required"
+        if self.base_price is None:
+            errors["base_price"] = "Base price is required"
+        if not self.receiver_name:
+            errors["receiver_name"] = "Receiver name is required"
+        if not self.receiver_phone:
+            errors["receiver_phone"] = "Receiver phone is required"
+        if not self.platform_fee:
+            errors["platform_fee"] = "Platform fee is required"
+        if not self.total_price:
+            errors["total_price"] = "Total price is required"
+        if self.is_urgent and not self.urgent_fee:
+            errors["is_urgent"] = "Urgent fee is required"
+
+        if errors:
+            raise ValidationError(errors)
+        return True
+
+        # return all([
+        #     self.package_type,
+        #     self.pickup_location,
+        #     self.delivery_location,
+        #     self.base_price,
+        #     self.receiver_name,
+        #     self.receiver_phone,
+        # ])
 
     def clean(self):
         """Django built-in validation hook"""

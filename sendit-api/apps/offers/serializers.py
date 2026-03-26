@@ -3,6 +3,7 @@ from  rest_framework import serializers
 from apps.core.services.media_service import MediaService
 from apps.core.models import Location
 from apps.core.serializers import LocationSerializer,MediaSerializer
+from apps.account.serializers import UserSerializer
 """
  "location": {
     "city": "Lagos",
@@ -71,10 +72,13 @@ class OfferLocationSerializer(serializers.ModelSerializer):
             instance.delivery_location = Location.objects.create(**delivery_location)
 
 class OfferPricingSerializer(serializers.ModelSerializer):
+    '''used as review serializer also'''
+
     class Meta:
         model = Offer
         fields = ["base_price", "is_urgent","total_price", "platform_fee","urgent_fee"]
         read_only = ["total_price", "platform_fee","urgent_fee"]
+
 
 
 class OfferTransitionSerializer(serializers.Serializer):
@@ -102,6 +106,7 @@ class OfferListSerializer(serializers.ModelSerializer):
             "is_fragile",
             "pickup_location",
             "delivery_location",
+            "base_price",
             "is_urgent",
             "urgent_fee",
 
@@ -113,6 +118,7 @@ class OfferListSerializer(serializers.ModelSerializer):
         ]
 
 
+
 class OfferSerializer(serializers.ModelSerializer):
 
     # pickup_location = LocationSerializer()
@@ -121,9 +127,13 @@ class OfferSerializer(serializers.ModelSerializer):
     details = OfferDetailsSerializer(source="*", read_only=True)
     image = serializers.SerializerMethodField(read_only=True)
     pricing = serializers.SerializerMethodField(read_only=True)
+    sender_detail = serializers.SerializerMethodField(read_only=True)
+    carrier_detail = serializers.SerializerMethodField(read_only=True, allow_null=True)
 
     def get_pricing(self, obj):
-        return OfferPricingSerializer(obj).data
+        pricing  = OfferPricingSerializer(obj).data
+        pricing["base_price"] = obj.base_price
+        return pricing
 
     class Meta:
         model = Offer
@@ -140,27 +150,74 @@ class OfferSerializer(serializers.ModelSerializer):
             "pricing",
             "status",
             "current_step",
+            "sender_detail",
+            "carrier_detail",
         ]
 
     def get_image(self, obj):
         image = obj.image
         return MediaSerializer(image).data if image else None
+    
+    def get_sender_detail(self, obj):
+        from apps.account.serializers import ProfileSerializer
+        return ProfileSerializer(obj.sender.profile).data
+    
+    def get_carrier_detail(self, obj):
+        from apps.account.serializers import ProfileSerializer
+        if obj.carrier:
+            return ProfileSerializer(obj.carrier.profile).data
+        return None
 
+
+
+class OfferUpdateSerializer(serializers.ModelSerializer):
+    pickup_location = serializers.JSONField(write_only=True)
+    delivery_location = serializers.JSONField(write_only=True)
+    image = serializers.ImageField(required=False)
+
+    class Meta:
+        model = Offer
+        fields = [
+            "package_type", "is_fragile", "description", "image",
+            "pickup_location", "delivery_location",
+            "receiver_name", "receiver_phone",
+            "base_price", "is_urgent"
+        ]
+
+    def update(self, instance, validated_data):
+        pickup_location = validated_data.pop("pickup_location", None)
+        delivery_location = validated_data.pop("delivery_location", None)
+        
+        if pickup_location:
+            instance.pickup_location = Location.objects.create(**pickup_location)
+        if delivery_location:
+            instance.delivery_location = Location.objects.create(**delivery_location)
+        
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        
+        instance.save()
+        return instance
 
 
 class ProposalSerializer(serializers.ModelSerializer):
     # we need to import it here to avoid circular imports
     carrier_detail = serializers.SerializerMethodField(read_only=True)
+    sender_detail = serializers.SerializerMethodField(read_only=True)
     offer_detail = serializers.SerializerMethodField(source="offer",read_only=True)
 
     class Meta:
         model = Proposal
-        fields = ["id", "offer", "offer_detail", "carrier", "carrier_detail", "price", "message", "status"]
+        fields = ["id", "offer", "offer_detail", "carrier", "sender_detail","carrier_detail", "price", "message", "status"]
         read_only_fields = ["id", "carrier", "status"]
 
     def get_carrier_detail(self, obj):
         from apps.account.serializers import ProfileSerializer
         return ProfileSerializer(obj.carrier.profile).data
+    
+    def get_sender_detail(self, obj):
+        from apps.account.serializers import ProfileSerializer
+        return ProfileSerializer(obj.sender.profile).data
     
     def get_offer_detail(self, obj):
         return OfferSerializer(obj.offer).data

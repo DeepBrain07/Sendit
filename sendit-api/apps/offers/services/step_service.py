@@ -31,7 +31,12 @@ class OfferStepService:
         
     @classmethod
     def _apply_step_data(cls, offer, step, data):
-        allowed_fields = cls.STEP_FIELDS.get(step, [])
+        allowed_fields = None
+        if step == Offer.Step.REVIEW:
+            allowed_fields = cls.STEP_FIELDS.get(Offer.Step.DETAILS, []) + cls.STEP_FIELDS.get(Offer.Step.LOCATION, []) + cls.STEP_FIELDS.get(Offer.Step.PRICING, [])
+        else:
+            allowed_fields = cls.STEP_FIELDS.get(step, [])
+        print(f"[step service] allowed_fields {allowed_fields}")
 
         print(f"[step service] data{data}")
         media = data.pop("image", None)
@@ -44,6 +49,7 @@ class OfferStepService:
         for field in allowed_fields:
             if field in data:
                 setattr(offer, field, data[field])
+        offer.save()
 
     @classmethod
     def update_step(cls, offer, step, data, user):
@@ -61,6 +67,7 @@ class OfferStepService:
 
             # 3. Apply data
             cls._apply_step_data(offer, step, data)
+            print(f"[step service] offer {offer}")
 
             # 4. Validate ONLY this step
             offer.validate_step(step)

@@ -89,6 +89,16 @@ OFFER_REVIEW_RESPONSE = OpenApiExample(
     response_only=True,
     status_codes=['200']
 )
+OFFER_UPDATE_RESPONSE = OpenApiExample(
+    'Offer Update',
+    summary='Full offer update before posting',
+    value={
+        "success": True,
+        "data":{ "package_type": "large", "is_fragile": "false", "pickup_location": { "city": "Ogbomosho", "area": "Under-G", "street": "LAUTECH Main Road", "landmark": "LAUTECH Second Gate", "latitude": 8.1229, "longitude": 4.2480 }, "delivery_location": { "city": "Ibadan", "area": "Iwo Road", "street": "Iwo Road Interchange", "landmark": "Iwo Road Roundabout / Motor Park", "latitude": 7.3971, "longitude": 3.9402 }, "is_urgent": "false", "base_price": 5000.0, "receiver_name": "Akinwale Bobo", "receiver_phone": "08033145678" }
+    },
+    response_only=True,
+    status_codes=['200']
+)
 
 
 OFFER_TRANSITION_REQUEST = OpenApiExample(
