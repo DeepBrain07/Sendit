@@ -2,10 +2,11 @@ import DashboardLayout from "../DashboardLayout/DashboardLayout"
 import GradientBackground from "../../components/GradientBackground"
 import { useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { useState } from "react";
-import AddMoneyModal from "./AddMoneyModal"; // Adjust path as necessary
+import { useState, useEffect } from "react";
+import AddMoneyModal from "./AddMoneyModal"; 
 import WithdrawMoneyModal from "./WithdrawMoneyModal";
 import BankDetailsModal from "./BankDetailsModal";
+import api from "../../api/axios";
 
 const Wallet = () => {
     const navigate = useNavigate();
@@ -13,10 +14,37 @@ const Wallet = () => {
     const [isWithdrawMoneyModalOpen, setIsWithdrawMoneyModalOpen] = useState(false);
     const [isBankDetailsModalOpen, setIsBankDetailsModalOpen] = useState(false);
 
+    const [walletData, setWalletData] = useState({
+        balance: 0,
+        transactions: []
+    });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchWalletData = async () => {
+            try {
+                // Fetch both balance and history in parallel
+                const [balanceRes, historyRes] = await Promise.all([
+                    api.get("/wallets/"),
+                    api.get("/wallets/history/")
+                ]);
+                console.log("Balance Response:", balanceRes.data);
+                setWalletData({
+                    balance: balanceRes.data.data.balance,
+                    transactions: historyRes.data.results // Accessing the 'results' array from your sample
+                });
+            } catch (error) {
+                console.error("Failed to fetch wallet data:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchWalletData();
+    }, []);
 
     return (
         <DashboardLayout>
-            {/* The Integrated Modal */}
             <AddMoneyModal 
                 isAddMoneyModalOpen={isAddMoneyModalOpen} 
                 setIsAddMoneyModalOpen={setIsAddMoneyModalOpen} 
@@ -30,8 +58,8 @@ const Wallet = () => {
                 setIsModalOpen={setIsBankDetailsModalOpen} 
             />
 
-            <div className="background !justify-start !flex !flex-col">
-                <div className="gradient-layer-alt2 flex flex-col p-4 pr-8 pt-8 gap-12 !text-white !h-fit">
+            <div className="background !justify-start overflow-hidden !flex !flex-col">
+                <div className="overflow-hidden gradient-layer-alt2 flex flex-col p-4 pr-8 pt-8 gap-12 !text-white !h-fit">
                     <div className='flex items-center justify-start gap-4'>
                         <button onClick={() => navigate('/home')} className="p-2 bg-white rounded-[50%] hover:bg-gray-100 transition-colors">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -41,10 +69,11 @@ const Wallet = () => {
                     <GradientBackground >
                         <div className="flex flex-col items-start ">
                             <p className="text-gray-300 !text-sm">Available Balance</p>
-                            <h1 className="!font-bold !text-2xl">₦12,500</h1>
+                            <h1 className="!font-bold !text-2xl">
+                                ₦{Number(walletData.balance).toLocaleString()}
+                            </h1>
                         </div>
                         <div className="w-full mt-4 rounded-xl flex items-center text-center justify-between gap-2 !text-black/80">
-                            
                             <div onClick={() => setIsAddMoneyModalOpen(true)} className="hover:bg-gray-100 flex flex-col w-fit items-center bg-white p-2 px-4 gap-1 cursor-pointer rounded-xl">
                                 <Icon icon="carbon:add-filled" width={24} className="shrink-0 text-primary"/>
                                 <p className="!text-xs !font-black !text-black">Add Money</p>
@@ -60,34 +89,32 @@ const Wallet = () => {
                         </div>
                     </GradientBackground>
                 </div>
-                {/* Recent Transactions */}
+
                 <div className="mt-[320px] flex flex-col pr-8 items-start w-full p-4">
                     <div className="flex items-center w-full justify-between gap-4">
                         <p className="!font-black !text-black">Recent Transactions</p>
                         <p className="!font-black cursor-pointer hover:underline !text-primary !text-xs">See all</p>
                     </div>
                     <div className="flex flex-col w-full gap-4 mt-4">
-                        <TransactionCard 
-                            type="deposit" 
-                            amount={10000} 
-                            status="Successful" 
-                            date="2023-10-15" 
-                            description="Received money from John Doe" 
-                        />
-                        <TransactionCard 
-                            type="withdrawal" 
-                            amount={5000} 
-                            status="Failed" 
-                            date="2023-10-14" 
-                            description="Withdrew money for groceries" 
-                        />
-                        <TransactionCard 
-                            type="delivery" 
-                            amount={2500}
-                            status="Pending"
-                            date="2023-10-13" 
-                            description="Payment for package delivery to Lagos" 
-                        />
+                        {loading ? (
+                            <p className="text-gray-500 text-sm">Loading transactions...</p>
+                        ) : walletData.transactions.length > 0 ? (
+                            walletData.transactions.map((tx:any) => (
+                                <TransactionCard 
+                                    key={tx.id}
+                                    type={tx.direction === 'in' ? "deposit" : "withdrawal"} 
+                                    amount={Number(tx.amount)} 
+                                    status={
+                                        tx.status === 'success' || tx.status === 'completed' ? 'Successful' : 
+                                        tx.status === 'failed' ? 'Failed' : 'Pending'
+                                    } 
+                                    date={new Date(tx.created_at).toLocaleDateString()} 
+                                    description={tx.note || "Transaction"} 
+                                />
+                            ))
+                        ) : (
+                            <p className="text-gray-500 text-sm text-center mt-4">No recent transactions</p>
+                        )}
                     </div>
                 </div>
             </div>

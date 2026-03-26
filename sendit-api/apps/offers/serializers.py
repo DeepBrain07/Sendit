@@ -192,29 +192,37 @@ class OfferUpdateSerializer(serializers.ModelSerializer):
         ]
 
     def update(self, instance, validated_data):
-        print(f"\n--- DEBUG: Starting Update for {instance.code} ---")
-        print(f"Initial Status: {instance.status}")
-        
         pickup_location = validated_data.pop("pickup_location", None)
         delivery_location = validated_data.pop("delivery_location", None)
         
         if pickup_location:
-            print(f"Creating Pickup Location: {pickup_location}")
             instance.pickup_location = Location.objects.create(**pickup_location)
         if delivery_location:
-            print(f"Creating Delivery Location: {delivery_location}")
             instance.delivery_location = Location.objects.create(**delivery_location)
         
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-            
-        # Force the status to posted
-        instance.status = "posted"
-        instance.current_step = "posted"
         
         instance.save()
         return instance
-    
+
+
+class ProposalListSerializer(serializers.ModelSerializer):
+    offer_code = serializers.CharField(source="offer.code", read_only=True)
+
+    class Meta:
+        model = Proposal
+        fields = [
+            "id",
+            "offer",          # UUID
+            "offer_code",     # Human-readable
+            "carrier",        # ID only
+            "price",
+            "status",
+            "created_at",
+        ]
+        read_only_fields = fields
+
 class ProposalSerializer(serializers.ModelSerializer):
     # we need to import it here to avoid circular imports
     carrier_detail = serializers.SerializerMethodField(read_only=True)
@@ -263,5 +271,4 @@ class ProposalStatusSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         # Additional validation can be added here if needed
         return attrs
-
 

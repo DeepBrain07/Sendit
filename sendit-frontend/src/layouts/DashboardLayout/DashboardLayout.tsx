@@ -14,7 +14,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
     "Profile": ["iconamoon:profile", "/profile"],
   }
   return (
-    <div className="w-full">
+    <div className="w-full overflow-hidden">
       <div className="mb-[100px]">
         {children}
       </div>
