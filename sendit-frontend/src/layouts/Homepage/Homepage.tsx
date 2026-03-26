@@ -37,7 +37,7 @@ const Homepage = () => {
                 const response = await api.get("/offers/");
                 console.log(response.data);
                 // Adjust based on your API response structure (usually response.data.results or response.data.data)
-                setOffers(response.data.data || response.data.results || []);
+                setOffers(response.data.offers || response.data.results || []);
             } catch (error) {
                 console.error("Failed to fetch offers:", error);
             }
