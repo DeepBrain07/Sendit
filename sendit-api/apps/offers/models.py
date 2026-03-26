@@ -6,6 +6,7 @@ from django.contrib.contenttypes.fields import GenericRelation
 from apps.core.models import Media, Location
 from decimal import Decimal
 
+
 class Offer(models.Model):
 
     class PackageType(models.TextChoices):
@@ -88,6 +89,10 @@ class Offer(models.Model):
     @property
     def image(self):
         return self.media.filter(tag='thumbnail').first() or ""
+    
+    @property
+    def carrier_price(self):
+        return Decimal(self.total_price - self.platform_fee) if self.total_price else Decimal(0)
 
     # -------------------------
     # BUSINESS LOGIC
@@ -96,9 +101,9 @@ class Offer(models.Model):
         if self.base_price is None:
             return
 
-        self.platform_fee = self.base_price * Decimal(settings.OFFER_PLATFORM_FEE)
+        self.platform_fee = self.base_price * Decimal(settings.OFFER_PLATFORM_FEE) # in percentage
         self.urgent_fee = Decimal(settings.OFFER_URGENT_FEE) if self.is_urgent else 0
-        self.total_price = self.base_price + self.urgent_fee
+        self.total_price = self.base_price + self.urgent_fee 
 
     def validate_step(self,step=None):
         """Validate only what is required at current step"""
@@ -157,11 +162,11 @@ class Proposal(models.Model):
         ACCEPTED = "accepted", "Accepted"
         REJECTED = "rejected", "Rejected"
 
-    offer = models.ForeignKey("offers.Offer", on_delete=models.CASCADE)
+    offer = models.ForeignKey("offers.Offer", on_delete=models.CASCADE, related_name="proposals")
     carrier = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     message = models.TextField(blank=True)
     status = models.CharField(
         max_length=20,

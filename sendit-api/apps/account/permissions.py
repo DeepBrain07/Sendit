@@ -14,4 +14,5 @@ class IsProfileOwnerOrAdmin(permissions.IsAuthenticated):
     message = "You don't have access to modify or view this profile"
 
     def has_object_permission(self, request, view, obj):
+        print(f"[profile perm] {request.headers.items()}")
         return bool(obj.user == request.user or request.user.is_staff)

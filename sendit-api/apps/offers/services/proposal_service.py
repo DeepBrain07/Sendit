@@ -2,6 +2,7 @@ from django.db import transaction
 from rest_framework.exceptions import ValidationError
 from apps.offers.models import Offer, Proposal
 from apps.escrow.models import Escrow
+from apps.escrow.services.escrow_services import EscrowService
 from .offer_service import OfferService
 
 class ProposalService:
@@ -48,42 +49,66 @@ class ProposalService:
         - Selected proposal -> ACCEPTED
         - Other proposals -> REJECTED
         - Offer -> ACCEPTED and carrier attached
-        - Escrow status -> LOCKED (funds are now tied to this specific carrier)
+        - Escrow status -> INITIATED (funds are now tied to this specific carrier)
+        """
+        with transaction.atomic():
+
+            # 🔒 Lock the offer row (prevents race conditions)
+            offer = proposal.offer.__class__.objects.select_for_update().get(id=proposal.offer.id)
+
+            # ✅ Authorization
+            if offer.sender != user:
+                raise ValidationError("You are not authorized to accept this proposal")
+
+            # ✅ Proposal must still be pending
+            if proposal.status != Proposal.Status.PENDING:
+                raise ValidationError("This proposal is not pending")
+
+            # ✅ Offer must not already be accepted
+            if offer.status == Offer.Status.ACCEPTED:
+                raise ValidationError("This offer has already been accepted")
+
+            # ✅ Ensure no escrow exists
+            if Escrow.objects.filter(offer=offer).exists():
+                raise ValidationError("Escrow already exists for this offer")
+
+            # =========================
+            # ✅ STATE TRANSITIONS
+            # =========================
+            # Accept this proposal
+            proposal.status = Proposal.Status.ACCEPTED
+            proposal.save()
+
+            # Reject others
+            Proposal.objects.filter(offer=offer).exclude(id=proposal.id).update(
+                status=Proposal.Status.REJECTED
+            )
+
+            # Update offer
+            offer.carrier = proposal.carrier
+            offer.status = Offer.Status.ACCEPTED
+            offer.save()
+
+            # Create escrow AFTER state is consistent
+            EscrowService.create_escrow(offer)
+
+        OfferService.handle_proposal_accepted(proposal)
+
+        return proposal
+    
+    def reject_proposal(proposal: Proposal, user):
+        """
+        Sender rejects a carrier's proposal.
+        - Proposal -> REJECTED
         """
         # Check if the user is the sender of the offer
         if proposal.offer.sender != user:
-            raise ValidationError("You are not authorized to accept this proposal")
-
-        # Check if the offer's escrow is funded
-        try:
-            escrow = proposal.offer.escrow
-            if escrow.status != Escrow.Status.FUNDED:
-                raise ValidationError("You must fund the offer before accepting a proposal")
-        except Escrow.DoesNotExist:
-            raise ValidationError("No escrow found for this offer. Please fund the offer first.")
-
-        # Check if the offer is already accepted
-        if proposal.offer.status == Offer.Status.ACCEPTED:
-             raise ValidationError("This offer has already been accepted")
+            raise ValidationError("You are not authorized to reject this proposal")
 
         # Update proposal status
-        proposal.status = Proposal.Status.ACCEPTED
+        proposal.status = Proposal.Status.REJECTED
         proposal.save()
 
-        # Update other proposals to rejected
-        Proposal.objects.filter(offer=proposal.offer).exclude(id=proposal.id).update(
-            status=Proposal.Status.REJECTED
-        )
-
-        # Update offer
-        offer = proposal.offer
-        offer.carrier = proposal.carrier
-        offer.status = Offer.Status.ACCEPTED
-        offer.save()
-
-        # Lock escrow to this transaction/carrier
-        escrow.lock()
-
         # Notify carrier
-        OfferService.handle_proposal_accepted(proposal)
+        OfferService.handle_proposal_rejected(proposal)
         return proposal

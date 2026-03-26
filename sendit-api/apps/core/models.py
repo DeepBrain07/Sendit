@@ -46,6 +46,9 @@ class Notification(models.Model):
         PAYOUT_SUCCESS = "payout_success", "Payout Success"
         VERIFICATION_PENDING = "verification_pending", "Verification Pending"
         VERIFICATION_APPROVED = "verification_approved", "Verification Approved"
+        NEW_PROPOSAL = "new_proposal", "New Proposal"
+        PROPOSAL_ACCEPTED = "proposal_accepted", "Proposal Accepted"
+        PROPOSAL_REJECTED = "proposal_rejected", "Proposal Rejected"
 
 
     user = models.ForeignKey(

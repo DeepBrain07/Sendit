@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import PermissionDenied,  ValidationError
-
+from .permissions import IsOfferOrProposalOwnerOrAdmin
 
 from .models import Offer, Proposal
 from .services.step_service import OfferStepService
@@ -315,6 +315,7 @@ class OfferCheckoutView(APIView):
                 "message": str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
 
+
 @offer_detail_doc
 class OfferView(APIView):
     permission_classes = [IsAuthenticated]
@@ -329,6 +330,7 @@ class OfferView(APIView):
             "data": serializer.data
         })
 
+
 class ProposalViewSet(viewsets.ModelViewSet):
     """
     ViewSet for Proposal management
@@ -336,7 +338,8 @@ class ProposalViewSet(viewsets.ModelViewSet):
     - Senders can see proposals for their offers
     - Senders can accept a proposal
     """
-    permission_classes = [IsAuthenticated]
+    http_method_names = ["get", "post", "patch"]
+    permission_classes = [IsOfferOrProposalOwnerOrAdmin]
     serializer_class = ProposalSerializer
 
     def get_queryset(self):
@@ -359,22 +362,40 @@ class ProposalViewSet(viewsets.ModelViewSet):
         try:
             proposal = ProposalService.create_proposal(
                 offer=offer,
-                carrier=request.user,
-                price=serializer.validated_data["price"],
-                message=serializer.validated_data.get("message", "")
+                price=offer.carrier_price,
+                carrier=request.user
             )
             return Response(ProposalSerializer(proposal).data, status=status.HTTP_201_CREATED)
         except ValidationError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+
     @action(detail=True, methods=["post"], url_path="accept")
     def accept(self, request, pk=None):
         """
         Sender accepts a carrier's proposal
+        - The proposal status is updated to ACCEPTED
+        - The offer status is updated to ACCEPTED
+        - The escrow is created and the offer is attached to the escrow
+        """
+        proposal = self.get_object()
+
+        try:
+            proposal = ProposalService.accept_proposal(proposal, request.user)
+            return Response({"message": "Proposal accepted successfully", 
+                             "data": {"proposal_id": proposal.id,"escrow_id": proposal.offer.escrow.id,
+                                       "amount": proposal.offer.escrow.amount}}, status=status.HTTP_200_OK)
+        except ValidationError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+    @action(detail=True, methods=["post"], url_path="reject")
+    def reject(self, request, pk=None):
+        """
+        Sender rejects a carrier's proposal
         """
         proposal = self.get_object()
         try:
-            ProposalService.accept_proposal(proposal, request.user)
-            return Response({"message": "Proposal accepted successfully"}, status=status.HTTP_200_OK)
+            ProposalService.reject_proposal(proposal, request.user)
+            return Response({"message": "Proposal rejected successfully"}, status=status.HTTP_200_OK)
         except ValidationError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
