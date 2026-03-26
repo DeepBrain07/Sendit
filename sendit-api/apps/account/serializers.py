@@ -93,7 +93,6 @@ class PhoneSerializer(serializers.Serializer):
 class GoogleLoginSerializer(serializers.Serializer):
     id_token = serializers.CharField()
 
-
 class ProfileSerializer(serializers.ModelSerializer):
 
     image = serializers.ImageField(required=False)
@@ -147,7 +146,7 @@ class VerificationSerializer(serializers.ModelSerializer):
     verification_id = serializers.SerializerMethodField(read_only=True)
     verified_by = UserSerializer(read_only=True)
     profile=UserSerializer(read_only=True)
-    
+
     class Meta:
         model = Verification
         fields = [

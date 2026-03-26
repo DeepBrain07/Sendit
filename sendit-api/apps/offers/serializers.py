@@ -147,18 +147,43 @@ class OfferSerializer(serializers.ModelSerializer):
         return MediaSerializer(image).data if image else None
 
 
+
 class ProposalSerializer(serializers.ModelSerializer):
     # we need to import it here to avoid circular imports
     carrier_detail = serializers.SerializerMethodField(read_only=True)
+    offer_detail = serializers.SerializerMethodField(source="offer",read_only=True)
 
     class Meta:
         model = Proposal
-        fields = ["id", "offer", "carrier", "carrier_detail", "price", "message", "status"]
+        fields = ["id", "offer", "offer_detail", "carrier", "carrier_detail", "price", "message", "status"]
         read_only_fields = ["id", "carrier", "status"]
 
     def get_carrier_detail(self, obj):
         from apps.account.serializers import ProfileSerializer
         return ProfileSerializer(obj.carrier.profile).data
+    
+    def get_offer_detail(self, obj):
+        return OfferSerializer(obj.offer).data
+    
+    
+
+    def validate(self, attrs):
+        user = self.context["request"].user
+        offer = attrs["offer"]
+
+        # ✅ Ensure user is a carrier
+        if getattr(user.profile, "type", None) != "carrier":
+            raise serializers.ValidationError(
+                "Only carriers can submit proposals.")
+
+        return attrs
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+        return Proposal.objects.create(
+            carrier=user,
+            **validated_data
+        )
 
 
 class ProposalStatusSerializer(serializers.ModelSerializer):

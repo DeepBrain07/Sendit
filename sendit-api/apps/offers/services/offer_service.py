@@ -15,7 +15,7 @@ class OfferService:
         ↓
       Carriers send Proposals
         ↓
-      Notify sender (new proposal)
+      Notify sender (new proposal
         ↓
       Sender accepts one proposal
         ↓
@@ -145,7 +145,22 @@ class OfferService:
             user=proposal.carrier,
             type=Notification.Type.PROPOSAL_ACCEPTED,
             title="You Got the Job 🎉",
-            message=f"You were selected for {proposal.offer.code}",
+            message=f"You were selected for offer code:{proposal.offer.code}",
+            content_object=proposal.offer
+        )
+
+    @staticmethod
+    def handle_proposal_rejected(proposal):
+        """
+        Sender rejected a carrier
+        Notify carrier
+        """
+
+        NotificationService.create(
+            user=proposal.carrier,
+            type=Notification.Type.PROPOSAL_REJECTED,
+            title="Proposal Rejected",
+            message=f"You were rejected for {proposal.offer.code}",
             content_object=proposal.offer
         )
 

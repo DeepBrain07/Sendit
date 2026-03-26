@@ -94,7 +94,7 @@ class GoogleLogin(APIView):
         response = Response(data=data, status=status.HTTP_201_CREATED)
 
         # Use the utility instead of manual set_cookie
-        return response # set_auth_cookies(response, tokens)
+        return set_auth_cookies(response, tokens)
 
 @google_auth_config_doc
 class GoogleAuthConfig(APIView):
