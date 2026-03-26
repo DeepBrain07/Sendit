@@ -27,7 +27,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
-print(f"DEBUG SECRET KEY: {SECRET_KEY}")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
@@ -57,9 +56,10 @@ LOCAL_APPS= [
     "apps.core",
     "apps.account",
     "apps.offers",
+    "apps.wallets",
     "apps.escrow",
     "apps.payments",
-    "apps.payouts",
+    "apps.payouts"
 ]
 
 INSTALLED_APPS =DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -173,7 +173,6 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'apps.account.custom_auth.CookieJWTAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.AllowAny',
@@ -208,7 +207,6 @@ CSRF_TRUSTED_ORIGINS = [
 CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_SECURE = False
-
 
 SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),   
@@ -300,5 +298,9 @@ OFFER_URGENT_FEE = os.getenv("OFFER_URGENT_FEE", 1000)
 # Interswitch Settings
 INTERSWITCH_CLIENT_ID = os.getenv("INTERSWITCH_CLIENT_ID")
 INTERSWITCH_CLIENT_SECRET = os.getenv("INTERSWITCH_CLIENT_SECRET")
-INTERSWITCH_BASE_URL = os.getenv("INTERSWITCH_BASE_URL", "https://sandbox.interswitchng.com/api/v3")
+INTERSWITCH_MERCHANT_CODE = os.getenv("INTERSWITCH_MERCHANT_CODE")
+
+
+INTERSWITCH_BASE_URL = os.getenv("INTERSWITCH_BASE_URL", "https://qa.interswitchng.com") 
 INTERSWITCH_CALLBACK_URL = os.getenv("INTERSWITCH_CALLBACK_URL", f"{FRONTEND_URL}/payments/callback")
+

@@ -1,13 +1,43 @@
 import DashboardLayout from "../DashboardLayout/DashboardLayout"
 import { profileImage } from "../../assets/images";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../../api/axios";
 
 const Homepage = () => {
     const navigate = useNavigate();
     const [selected, setSelected] = useState("");
+    const [userData, setUserData] = useState<any>(() => {
+        try {
+            const user = localStorage.getItem('user');
+            return JSON.parse(user || '{}');
+        } catch (e) {
+            return {};
+        }
+    });
+
     const places = ["Lagos", "Abuja", "Port Harcourt", "Kano", "Ibadan", "Enugu"];
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const response = await api.get("/users/me/");
+                const freshData = response.data.data;
+                setUserData(freshData);
+                // Keep localStorage in sync
+                localStorage.setItem('user', JSON.stringify(freshData));
+            } catch (error) {
+                console.error("Failed to refresh user data:", error);
+            }
+        };
+
+        fetchUserData();
+    }, []);
+
+    const avatarUrl = userData?.avatar?.file_url || userData?.profile?.avatar?.file || profileImage;
+    const firstName = userData?.first_name || "User";
+
     return (
         <DashboardLayout>
             <div className="background !justify-start !flex !flex-col">
@@ -16,9 +46,9 @@ const Homepage = () => {
                     <div className="flex justify-between w-full ">
                         <div className="flex  gap-2">
                             <div className="rounded-[50%] shrink-0 w-fit h-fit">
-                                <img src={profileImage} alt="Profile" className="size-10 rounded-[50%]"/>
+                                <img src={avatarUrl} alt="Profile" className="size-10 rounded-[50%] object-cover"/>
                             </div>
-                            <p>Good morning,<br/><span className="!font-bold"> Heritage </span></p>
+                            <p>Good morning,<br/><span className="!font-bold"> {firstName} </span></p>
                         </div>
                         {/* notification */}
                         <div className="w-fit shrink-0 h-fit p-2 rounded-[50%]  bg-white">
@@ -33,10 +63,10 @@ const Homepage = () => {
                             <input 
                                 type="text" 
                                 placeholder="Search destination city..." 
-                                className="flex-1 w-full  bg-transparent" 
+                                className="flex-1 w-full  bg-transparent outline-none" 
                                 />
                         </div>
-                        <div className="flex gap-4 overflow-x-scroll !text-white">
+                        <div className="flex gap-4 overflow-x-scroll !text-white scrollbar-hide">
                             {places.map((place) => (
                                 <div key={place} className="cursor-pointer shrink-0 p-2 py-1 rounded-full bg-[#001F72]">
                                     <p>{place}</p>
@@ -50,12 +80,12 @@ const Homepage = () => {
                     {/* QuickActions */}
                     <div className="flex flex-col w-full items-start gap-4 !text-black">
                         <h2 className="!font-extralight !text-xl">Quick Actions</h2>
-                        <div className="flex w-full gap-4 overflow-x-scroll p-2">
+                        <div className="flex w-full gap-4 overflow-x-scroll p-2 scrollbar-hide">
                             <div onClick={() => {setSelected("Send Package"); navigate("/send")}}>
                                 <QuickActionsCard selected={selected === "Send Package"} title="Send Package" icon="mingcute:package-2-fill" details="Post what you need delivered."/>
                             </div>
                             <div onClick={() => {setSelected("Browse Offers"); navigate("/offers")}}>
-                                <QuickActionsCard selected={selected === "Browse Offers"} title="Browse Offers" icon="wpf:search" details="See available package offers. "/>
+                                <QuickActionsCard selected={selected === "Browse Offers"} title="Browse Offers" icon="wpf:search" details="See available package offers. "/>
                             </div>
                             <div onClick={() => {setSelected("Fund wallet"); navigate("/wallet")}}>
                                 <QuickActionsCard selected={selected === "Fund wallet"} title="Fund wallet" icon="ion:wallet" details="Add money for quick payments."/>
@@ -64,7 +94,7 @@ const Homepage = () => {
                     </div>
 
                     {/* Recent Activities */}
-                    <div className="mt-12 flex flex-col w-full items-start gap-4 !text-black">
+                    <div className="mt-12 flex flex-col w-full items-start gap-4 !text-black pb-12">
                         <div className="flex items-center justify-between w-full pr-4">
                             <h2 className="!font-extralight !text-xl">Recent Activities</h2>
                             <p className="text-primary hover:underline cursor-pointer">See all</p>
@@ -84,7 +114,7 @@ const Homepage = () => {
 
 const QuickActionsCard = ({ title, icon, details, selected }: { title: string, icon: string, details: string, selected: boolean }) => {
     return (
-        <div className={`${selected && 'ring-2 ring-primary'} border-1 border-gray-100 rounded-xl p-4 hover:ring-2 hover:ring-primary shrink-0 w-[150px] shadow-xs cursor-pointer flex flex-col items-start bg-gray-50 text-black/80'`}>
+        <div className={`${selected ? 'ring-2 ring-primary' : ''} border-1 border-gray-100 rounded-xl p-4 hover:ring-2 hover:ring-primary shrink-0 w-[150px] shadow-xs cursor-pointer flex flex-col items-start bg-gray-50 text-black/80'`}>
             <Icon icon={icon} width={26} className='text-primary'/>
             <p className="!font-black mt-1">{title}</p>
             <p className="text-left !text-[12px]  !text-black/60">{details}</p>

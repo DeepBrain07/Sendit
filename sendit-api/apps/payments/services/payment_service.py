@@ -3,19 +3,21 @@ from django.core.exceptions import PermissionDenied
 import requests
 import base64
 from apps.payments.models import Transaction
-from apps.escrow.models import Escrow 
 from apps.core.services.notification_service import NotificationService
+# from apps.wallets.services.wallet_services import WalletService
+import uuid
+
 
 class PaymentService:
 
     @staticmethod
     def get_interswitch_access_token():
-        url = f"{settings.INTERSWITCH_BASE_URL}/passport/token"
-        
+        url = f"{settings.INTERSWITCH_BASE_URL}/passport/oauth/token?grant_type=client_credentials"
+
         # Interswitch usually uses basic auth for token generation
         auth_str = f"{settings.INTERSWITCH_CLIENT_ID}:{settings.INTERSWITCH_CLIENT_SECRET}"
         encoded_auth = base64.b64encode(auth_str.encode()).decode()
-        
+
         headers = {
             "Authorization": f"Basic {encoded_auth}",
             "Content-Type": "application/x-www-form-urlencoded"
@@ -25,83 +27,71 @@ class PaymentService:
             "grant_type": "client_credentials",
             "scope": "profile"
         }
-        
-        response = requests.post(url, data=payload, headers=headers)
-        if response.status_code == 200:
-            return response.json().get("access_token")
-        return None
+        try:
+            response = requests.post(url, data=payload, headers=headers)
+            if response.status_code == 200:
+                return response.json().get("access_token")
+            return None
+        except requests.RequestException as e:
+            print(f"Error fetching access token: {e}")
+            return None
 
     @staticmethod
-    def initiate_payment(offer, user):
-        if offer.sender != user:
-            raise PermissionDenied("Only the sender can fund this offer")
+    def create_funding_payload(user, amount):
+        """
+        Initiate wallet funding via payment gateway (Interswitch).
+        - Creates a transaction in INITIATED status.
+        - Returns payload frontend can use to render inline form.
+        """
 
-        # Create or get existing transaction
-        transaction, created = Transaction.objects.get_or_create(
-            offer=offer,
-            defaults={
-                "tx_ref": f"ESCROW_{offer.id}_{offer.code}",
-                "amount": offer.total_price,
-                "status": Transaction.Status.INITIATED
-            }
+        # 1️⃣ Check user verification
+        if not getattr(user.profile, "is_verified", False):
+            raise PermissionDenied("Only verified users can fund wallet")
+
+        # 2️⃣ Ensure wallet exists
+        wallet = getattr(user, "wallet", None)
+        if not wallet:
+            # wallet = WalletService.create_wallet_account(user)
+            raise ValueError("No wallet linked to user account")
+
+        # 3️⃣ Generate unique transaction reference
+        tx_ref = f"Wallet_{uuid.uuid4().hex[:16]}_{int(amount*100)}"
+
+        # 4️⃣ Create transaction record
+        transaction = Transaction.objects.create(
+            wallet=wallet,
+            tx_ref=tx_ref,
+            amount=amount,
+            status=Transaction.Status.INITIATED
         )
 
-        # Create escrow if not exists
-        escrow, e_created = Escrow.objects.get_or_create(
-            offer=offer,
-            transaction=transaction,
-            defaults={
-                "amount": offer.total_price,
-                "status": Escrow.Status.PENDING
-            }
-        )
-
-        # Call Interswitch to initiate purchase
-        url = f"{settings.INTERSWITCH_BASE_URL}/purchases"
-        
-        access_token = PaymentService.get_interswitch_access_token()
-        if not access_token:
-            raise Exception("Failed to authenticate with payment gateway")
-
+        # 5️⃣ Prepare payload for frontend inline form
         payload = {
-            "amount": int(transaction.amount * 100),  # amount in kobo
+            "tx_ref": tx_ref,                        # required by Interswitch
+            "amount": int(round(amount * 100)),      # convert NGN to kobo
             "currency": "NGN",
-            "txn_ref": transaction.tx_ref,
             "site_redirect_url": settings.INTERSWITCH_CALLBACK_URL,
-            "customer_email": offer.sender.email,
-            "customer_mobile": offer.sender.profile.phone_number if hasattr(offer.sender, 'profile') else None,
+            "interswitch_payment_url": f"{settings.INTERSWITCH_BASE_URL}/collections/w/pay",
+            "customer_email": user.email,
+            "customer_mobile": getattr(user.profile, "phone_number", None),
         }
 
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json"
-        }
+        return transaction, payload
 
-        response = requests.post(url, json=payload, headers=headers)
-        
-        if response.status_code in [200, 201]:
-            data = response.json()
-            # Interswitch usually returns a redirect URL or a payment token
-            return {
-                "transaction": transaction,
-                "payment_url": data.get("payment_url"),
-                "payment_token": data.get("payment_token")
-            }
-        
-        raise Exception(f"Payment gateway error: {response.text}")
-  
     @staticmethod
-    def handle_payment_success(transaction, payload=None):
-        transaction.mark_success(payload)
+    def notify_payment_status(transaction):
+        """
+        Called after Interswitch confirms payment.
+        - Marks transaction SUCCESS
+        - Credits wallet
+        - Sends notification to user
+        """
 
-        escrow = transaction.escrow
-        escrow.mark_funded()
-
-        # 🔥 notify
-        NotificationService.notify(
-            user=transaction.offer.sender,
+        # 3️⃣ Notify user
+        NotificationService.create(
+            user=transaction.wallet.user,
             type="payment_success",
-            title="Payment Successful",
-            message=f"Your escrow for {transaction.offer.code} has been funded with {transaction.amount}",
-            obj=transaction.offer
+            title="Wallet Funded",
+            message=f"Your wallet has been funded with NGN {transaction.amount:.2f}",
+            content_object=transaction
         )

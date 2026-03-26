@@ -2,7 +2,7 @@ from apps.core.services.notification_service import NotificationService
 
 class NotifyServices:
     """
-    Initiate → Pay → Webhook → Verify → Escrow FUNDED
+    Initiate → Pay → Webhook → Verify → Wallet  FUNDED
     """
 
     @staticmethod
@@ -10,9 +10,9 @@ class NotifyServices:
 
         offer = transaction.offer
 
-        NotificationService.notify(
+        NotificationService.create(
             user=offer.sender,
             type="payment_success",
             title="Payment Successful",
-            message=f"Your escrow has been funded with (amount: {transaction.amount})",
-            obj=offer)
+            message=f"Your wallet has been funded with (amount: {transaction.amount})",
+            content_object=offer)

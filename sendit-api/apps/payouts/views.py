@@ -29,3 +29,5 @@ class PayoutViewSet(viewsets.ModelViewSet):
             return Response({"error": "Offer not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+

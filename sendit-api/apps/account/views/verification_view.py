@@ -5,9 +5,25 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
+from apps.account.documentation.account.schemas import verification_doc, review_verification_doc
+from apps.core.services.notification_service import NotificationService,Notification
 
 
+@verification_doc
 class VerificationViewSet(viewsets.ModelViewSet):
+    """
+    
+        "This endpoint allows users to submit and manage identity verification requests.
+        "**User capabilities:**
+        "- Submit verification (with document + selfie)"
+        "- View their verification(s)"
+        "- Update uploaded files if needed"
+        "**Admin capabilities:**"
+        "- View all verification requests"
+        "- Review (approve/reject) a verification using the `/review/` action"
+        "Each verification includes uploaded documents and a selfie for identity confirmation."
+    
+    """
     serializer_class = VerificationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -43,6 +59,7 @@ class VerificationViewSet(viewsets.ModelViewSet):
             return ReviewVerificationSerializer
         return super().get_serializer_class()
 
+    @review_verification_doc
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def review(self, request, pk=None):
         """
@@ -63,11 +80,19 @@ class VerificationViewSet(viewsets.ModelViewSet):
         if verification.is_verified:
             verification.verified_by = request.user
             verification.verified_at = timezone.now()
+
+            # Send notification to user 
+            NotificationService.create(
+                user=verification.profile.user,
+                type=Notification.Type.VERIFICATION_APPROVED,
+                title= "Verification Approved",
+                message=f"Your {verification.verification_type} verification request has been approved.",
+                content_object=verification
+            )
         else:
             # Optional: clear if rejected
             verification.verified_by = None
             verification.verified_at = None
-
         verification.save()
 
         # ✅ Safer profile sync

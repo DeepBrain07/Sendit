@@ -1,4 +1,3 @@
-import cloudinary.uploader
 from django.core.exceptions import ValidationError
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -6,7 +5,6 @@ from django.db import transaction
 from apps.core.models import Media
 from apps.core.services.cloudinary_service import CloudinaryService
 from rest_framework.exceptions import ValidationError
-import cloudinary
 # from django.excep
 
 
@@ -224,10 +222,8 @@ class MediaService:
                 tag="thumbnail" if existing_count == 0 and index == 0 else tag,
                 order=existing_count + index
             )
-
             created.append(media)
 
         return created
 
 
-    
