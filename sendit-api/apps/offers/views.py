@@ -19,16 +19,17 @@ from apps.offers.services.proposal_service import ProposalService
 from apps.payments.services.payment_service import PaymentService
 from .serializers import  (OfferCreateSerializer, OfferListSerializer,
 OfferDetailsSerializer,OfferLocationSerializer, OfferUpdateSerializer,OfferPricingSerializer, 
-OfferTransitionSerializer,OfferSerializer, ProposalSerializer, ProposalStatusSerializer)
+OfferTransitionSerializer,OfferSerializer, ProposalSerializer, ProposalListSerializer, ProposalStatusSerializer)
 from .documentation.offers.schemas import (offer_list_create_doc, offer_step_details_doc, offer_location_doc, 
-                                           offer_pricing_doc, offer_review_doc, offer_transition_doc, offer_detail_doc)
+                                           offer_pricing_doc, offer_review_doc, offer_transition_doc, offer_detail_doc, proposal_doc)
 
 from .permissions import IsSender
 
 @offer_list_create_doc
 class OfferListCreateView(ListCreateAPIView):
     """
-    offers/?mine=true
+    you can see posted offer in the market
+    you can see your own offer in the market whe you filter ?mine=true
     """
     # queryset = Offer.objects.all()
     permission_classes = [IsAuthenticated]
@@ -205,11 +206,8 @@ class BaseOfferStepView(APIView):
             return Response({
                 "success": True,
                 "message": "STEP_UPDATE_SUCCESS",
-                "data": {
-                    "id": offer.id,
-                    "status": offer.status,
-                    "current_step": offer.current_step
-                }
+                "data": OfferListSerializer(offer).data
+                
             })
 
         except ValidationError as e:
@@ -253,6 +251,7 @@ class OfferReviewView(BaseOfferStepView):
         "latitude": 8.1229,
         "longitude": 4.2480
     },
+    "pickup_time": "2023-12-12T10:00:00",
     "delivery_location": {
     
         "city": "Ibadan",
@@ -346,17 +345,23 @@ class OfferView(APIView):
         })
     
 
-
+@proposal_doc
 class ProposalViewSet(viewsets.ModelViewSet):
     """
     ViewSet for Proposal management
     - Carriers can create proposals for posted offers
     - Senders can see proposals for their offers
-    - Senders can accept a proposal
+    - Senders can accept a proposal (it rejects for other automatically)
+    - Senders can reject a proposal
     """
     http_method_names = ["get", "post", "patch"]
     permission_classes = [IsOfferOrProposalOwnerOrAdmin]
-    serializer_class = ProposalSerializer
+    serializer_class = ProposalListSerializer
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return ProposalListSerializer
+        return ProposalSerializer
 
     def get_queryset(self):
         user = self.request.user
@@ -372,7 +377,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         offer = serializer.validated_data["offer"]
 
         try:
@@ -381,7 +386,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
                 price=offer.carrier_price,
                 carrier=request.user
             )
-            return Response(ProposalSerializer(proposal).data, status=status.HTTP_201_CREATED)
+            return Response(ProposalListSerializer(proposal).data, status=status.HTTP_201_CREATED)
         except ValidationError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 

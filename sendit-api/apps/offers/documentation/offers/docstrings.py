@@ -136,3 +136,45 @@ OFFER_TRANSITION_ERROR = OpenApiExample(
     response_only=True,
     status_codes=['400']
 )
+
+
+PROPOSAL_CREATE_REQUEST = OpenApiExample(
+    'Create Proposal',
+    summary='Carrier submits a proposal for an offer',
+    value={
+        "offer": 10
+    },
+    request_only=True,
+)
+
+PROPOSAL_CREATE_FAILED_RESPONSE = OpenApiExample(
+    'Create Proposal Failed Response',
+    summary='Response when a sender creates a proposal failed',
+    value={
+        "message": "Proposal created failed with error message either offer not found or offer is not posted"
+    },
+    response_only=True,
+)
+
+PROPOSAL_ACCEPT_RESPONSE = OpenApiExample(
+    'Accept Proposal Response',
+    summary='Response when a sender accepts a proposal',
+    value={
+        "message": "Proposal accepted successfully",
+        "data": {
+            "proposal_id": 1,
+            "escrow_id": 100,
+            "amount": 1000
+        }
+    },
+    response_only=True,
+)
+
+PROPOSAL_REJECT_RESPONSE = OpenApiExample(
+    'Reject Proposal Response',
+    summary='Response when a sender rejects a proposal',
+    value={
+        "message": "Proposal rejected successfully"
+    },
+    response_only=True,
+)

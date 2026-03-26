@@ -1,10 +1,13 @@
 from drf_spectacular.utils import extend_schema_view, extend_schema
 from drf_spectacular.types import OpenApiTypes
 from .docstrings import (OFFERS_EMPTY_RESPONSE, OFFERS_LIST_RESPONSE,OFFER_UPDATE_RESPONSE,
-                         OFFER_STEP_ERROR_RESPONSE, OFFER_REVIEW_RESPONSE, OFFER_TRANSITION_ERROR, OFFER_TRANSITION_REQUEST, OFFER_TRANSITION_SUCCESS)
+                         OFFER_STEP_ERROR_RESPONSE, OFFER_REVIEW_RESPONSE, OFFER_TRANSITION_ERROR, 
+                         PROPOSAL_CREATE_REQUEST, PROPOSAL_ACCEPT_RESPONSE, PROPOSAL_REJECT_RESPONSE,
+                         OFFER_TRANSITION_REQUEST, OFFER_TRANSITION_SUCCESS, PROPOSAL_CREATE_FAILED_RESPONSE
+)
 from apps.offers.serializers import  (OfferCreateSerializer, OfferListSerializer,
 OfferDetailsSerializer,OfferLocationSerializer,OfferPricingSerializer, OfferUpdateSerializer,
-OfferTransitionSerializer, OfferSerializer)
+OfferTransitionSerializer, OfferSerializer, ProposalSerializer)
 
 """
 offer status view : https://chatgpt.com/s/t_69c048767d148191ba8d24822cd74fcc
@@ -160,7 +163,7 @@ offer_review_doc = extend_schema_view(
         tags=['Offers'],
     ),
     patch=extend_schema(
-        summary='Review Offer Before Posting',
+        summary='Patch data to update Offer Before Posting',
         description=(
             "Update the offer before posting. "
             "This endpoint aggregates all steps (details, location, pricing, receiver info). "
@@ -175,7 +178,6 @@ offer_review_doc = extend_schema_view(
         tags=['Offers'],
     )
 )
-
 
 offer_transition_doc = extend_schema_view(
     post=extend_schema(
@@ -198,4 +200,37 @@ offer_transition_doc = extend_schema_view(
         ],
         tags=['Offers'],
     )
+)
+
+proposal_doc = extend_schema_view(
+    list=extend_schema(
+        summary='List Proposals',
+        description='Retrieve proposals for the logged-in user: Senders see proposals for their offers, carriers see their own proposals.',
+        responses={200: ProposalSerializer},
+        tags=['Proposals'],
+    ),
+    create=extend_schema(
+        summary='Create Proposal',
+        description='Carrier submits a proposal for a posted offer.',
+        request=ProposalSerializer,
+        responses={201: ProposalSerializer, 400: PROPOSAL_CREATE_FAILED_RESPONSE},
+        examples=[PROPOSAL_CREATE_REQUEST, PROPOSAL_CREATE_FAILED_RESPONSE],
+        tags=['Proposals'],
+    ),
+    accept=extend_schema(
+        summary='Accept Proposal',
+        description='Sender accepts a carrier\'s proposal. The proposal and offer statuses are updated and an escrow is created.',
+        responses={200: PROPOSAL_ACCEPT_RESPONSE, 400: PROPOSAL_CREATE_FAILED_RESPONSE},
+        examples=[PROPOSAL_ACCEPT_RESPONSE],
+        methods=['POST'],
+        tags=['Proposals'],
+    ),
+    reject=extend_schema(
+        summary='Reject Proposal',
+        description='Sender rejects a carrier\'s proposal.',
+        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT},
+        examples=[PROPOSAL_REJECT_RESPONSE],
+        methods=['POST'],
+        tags=['Proposals'],
+    ),
 )
