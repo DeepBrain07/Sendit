@@ -53,7 +53,6 @@ const VerifyLayout = () => {
         const profileFormData = new FormData();
         profileFormData.append('phone_number', phone);
         profileFormData.append('type', 'carrier');
-        // Now that this field is on the Profile model, we send it here
         profileFormData.append('is_new_user', "false"); 
         
         const base64Image = faceData.image || faceData; 
@@ -69,32 +68,32 @@ const VerifyLayout = () => {
 
         /**
          * 2. Create Verification Record (ID details)
-         * Note: Ensure this hits your Verification model endpoint, usually a POST
+         * Updated to include the document base64 from identificationData
          */
         if (identificationData) {
           console.log("Submitting Verification Record...");
-          await api.patch(`/users/${userId}/profiles/`, {
+          await api.patch(`/users/verification/`, {
             verification_type: identificationData.type,
             id_number: identificationData.number,
+            selfie: base64Image,
+            // Capture document from identificationData if available, fallback to selfie
+            document: identificationData.document || base64Image, 
           });
         }
 
         /**
          * 3. Sync Local Storage
-         * We update the profile data and ensure is_new_user is false 
-         * so the app knows onboarding is complete.
          */
         const updatedUser = {
             ...storedUser,
             profile: {
                 ...profileResponse.data,
-                is_new_user: false // Force local state to false
+                is_new_user: false 
             }
         };
         localStorage.setItem('user', JSON.stringify(updatedUser));
         console.log("✅ Onboarding complete. Local storage synced.");
 
-        // Move to final step
         setStep(5);
 
       } catch (error: any) {

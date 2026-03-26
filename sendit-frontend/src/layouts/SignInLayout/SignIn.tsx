@@ -39,11 +39,11 @@ function SignIn() {
          * If they are a new user (haven't completed VerifyLayout), send to verify.
          * Otherwise, send to the main app dashboard.
          */
-        if (isNewUser) {
-          navigate('/onboarding');
-        } else {
-          navigate('/home'); // or wherever your main landing page is
-        }
+        // if (isNewUser) {
+        //   navigate('/onboarding');
+        // } else {
+        //   navigate('/home'); // or wherever your main landing page is
+        // }
         
       } catch (error: any) {
         console.error('Login Error details:', error.response?.data);
