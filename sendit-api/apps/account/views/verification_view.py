@@ -39,7 +39,6 @@ class VerificationViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
-
             serializer = self.get_serializer(
                 data=request.data, context={'request': request}
             )
