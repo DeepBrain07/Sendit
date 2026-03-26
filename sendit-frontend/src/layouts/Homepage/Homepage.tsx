@@ -117,7 +117,8 @@ const Homepage = () => {
                                 <RecentActivitiesCard 
                                     key={offer.id}
                                     carrier={offer.status === 'delivered'} 
-                                    displacement={`${offer.pickup_location?.city} to ${offer.delivery_location?.city}`} 
+                                    from={offer.pickup_location?.city}
+                                    to={offer.delivery_location?.city}
                                     amount={offer.total_price} 
                                     name={offer.sender?.first_name || "Unknown"}
                                 />
@@ -142,13 +143,17 @@ const QuickActionsCard = ({ title, icon, details, selected }: { title: string, i
     )
 }
 
-const RecentActivitiesCard = ({ displacement, carrier, amount, name }: { displacement: string, carrier: boolean, amount: string, name: string }) => {
+const RecentActivitiesCard = ({ from, to, carrier, amount, name }: { from: string, to: string, carrier: boolean, amount: string, name: string }) => {
     return (
         <div className="border-1 border-gray-100 rounded-xl p-4 shrink-0 w-full shadow-xs cursor-pointer flex justify-between gap-8 bg-gray-50 text-black/80">
             <div className="flex gap-2 items-start justify-start">
                 {carrier ? <div className="p-1 rounded-[50%] text-primary bg-white"><Icon icon="mage:package-box-fill" width={26} /></div> : <div className="p-1 rounded-[50%] text-primary bg-white"><Icon icon="material-symbols:luggage-rounded" width={26} /></div>}
                 <div className="flex flex-col">
-                    <p className="!font-black ">{displacement}</p>
+                    <div className="flex items-center gap-2">
+                        <p className="!font-black ">{from}</p>
+                        <Icon icon="tabler:arrow-right" width={20} className='inline text-bodyText/80'/>
+                        <p className="!font-black ">{to}</p>
+                    </div>
                     <p className="text-left !text-[12px]  !text-black/60">{carrier ? 'Carrier:' : 'Sender:'}: <span className="!text-black">{name}</span></p>
                     <div className="flex gap-1">
                         <p className="text-left !text-[12px]  !text-black/60">Delivered recently</p>

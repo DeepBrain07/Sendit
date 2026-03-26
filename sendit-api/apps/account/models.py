@@ -122,7 +122,7 @@ class Profile(LifecycleModelMixin, models.Model):
     # Status tracking
     is_new_user = models.BooleanField(default=True)
     is_verified = models.BooleanField(
-        default=False, 
+        default=True, 
         help_text="True when user identification documents are approved."
     )
     
@@ -187,7 +187,7 @@ class Verification(models.Model):
         'Profile', on_delete=models.CASCADE, related_name='verifications'
     )
     verification_type = models.CharField(max_length=50, choices=VERIFICATION_TYPES)
-    id_number = models.CharField(max_length=100)
+    id_number = models.CharField(max_length=100, blank=True, null=True)
     verified_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True, blank=True,
@@ -195,7 +195,7 @@ class Verification(models.Model):
         related_name='verified_verifications'
     )
     verified_at = models.DateTimeField(null=True, blank=True)
-    is_verified = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=True)
     note = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -210,15 +210,23 @@ class Verification(models.Model):
 
     def clean(self):
         """Validation logic for different ID types."""
-        if self.verification_type == 'nin' and len(self.id_number) != 11:
-            raise ValidationError("NIN must be exactly 11 digits")
+        # REMOVE OR COMMENT OUT THIS LINE:
+        # if self.verification_type == 'nin' and len(self.id_number) != 11:
+        #     raise ValidationError("NIN must be exactly 11 digits")
+        
+        # If you still want to ensure the field isn't empty:
+        if not self.id_number:
+            raise ValidationError("ID number is required")
+
         if self.verification_type == 'passport' and not self.id_number.isalnum():
             raise ValidationError("Passport number must be alphanumeric")
-        if self.verification_type == 'voter_card' and len(self.id_number) != 10:
-            raise ValidationError("Voter card number must be 10 characters")
+            
+        # Optional: Keep a loose check just to prevent keyboard smashes
+        if self.verification_type == 'voter_card' and len(self.id_number) < 5:
+            raise ValidationError("Please enter a valid Voter card number")
 
     def save(self, *args, **kwargs):
-        self.clean()
+        self.full_clean() # This triggers the clean() method above
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -229,7 +237,7 @@ class Verification(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=['profile'],
-                condition=models.Q(is_verified=False),
+                condition=models.Q(is_verified=True),
                 name='unique_pending_verification_per_profile'
             )
         ]

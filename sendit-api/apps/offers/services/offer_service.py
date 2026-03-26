@@ -3,25 +3,10 @@ from apps.account.models import Profile as UserProfile
 from apps.core.services.geo_service import GeoService
 from apps.core.models import Notification
 
-# NOTIFICATION
-
 class OfferService:
     """
-    Sender creates Offer
-        ↓
-      Offer POSTED
-        ↓
-      Notify nearby carriers
-        ↓
-      Carriers send Proposals
-        ↓
-      Notify sender (new proposal
-        ↓
-      Sender accepts one proposal
-        ↓
-      Notify selected carrier
+    Service to handle offer lifecycle events and carrier matching.
     """
-
     DEFAULT_RADIUS_KM = 10
 
     # -------------------------
@@ -30,54 +15,58 @@ class OfferService:
 
     @classmethod
     def get_nearby_carriers(cls, pickup_location):
-        profiles = UserProfile.objects.select_related("user", "location")
+        """
+        Finds carriers within the default radius of a pickup location.
+        """
+        # OPTIMIZATION: Only pull profiles that have a location and are 'carrier' type
+        # This prevents looping through thousands of non-carrier or empty profiles.
+        profiles = UserProfile.objects.select_related("user", "location").filter(
+            location__isnull=False,
+            type__iexact="carrier" # Case-insensitive match at DB level
+        )
+        
         nearby = []
 
+        if not pickup_location:
+            print("[offerservices]: Error - No pickup location provided for matching.")
+            return []
+
         for profile in profiles:
-            print(
-                f"[offerservices]:1 {profile.location.latitude, profile.location.longitude}")
-
-            if not profile.location:
+            # DEFENSIVE: Double check location exists before accessing lat/lng
+            if not profile.location or profile.location.latitude is None:
                 continue
-
-            if getattr(profile, "type", None) != "carrier":
-                continue
+            
+            # Safe logging: Latitude/Longitude are now guaranteed to exist here
+            print(f"[offerservices]: Checking carrier {profile.user.email} at "
+                  f"({profile.location.latitude}, {profile.location.longitude})")
 
             distance = GeoService.distance_between_locations(
                 pickup_location,
                 profile.location
             )
 
-            radius = cls.DEFAULT_RADIUS_KM
-
-            if distance and distance <= radius:
+            # Check if within radius (10km default)
+            if distance is not None and distance <= cls.DEFAULT_RADIUS_KM:
                 nearby.append(profile.user)
 
-        print(f"[offerservices]:3 {[user.email for user in nearby]}")
+        print(f"[offerservices]: Found {len(nearby)} nearby carriers for offer.")
         return nearby
 
     # -------------------------
-    # 🔍 MATCHING: OFFERS
+    # 🔍 MATCHING: OFFERS (For Marketplace filtering)
     # -------------------------
 
     @classmethod
     def get_nearby_offers(cls, offers, user_location, radius_km=10):
-
-        # offers = Offer.objects.select_related("pickup_location")
         nearby = []
-
         for offer in offers:
             loc = offer.pickup_location
-
-            if not loc:
+            if not loc or not user_location:
                 continue
 
-            distance = GeoService.distance_between_locations(
-                user_location,
-                loc
-            )
+            distance = GeoService.distance_between_locations(user_location, loc)
 
-            if distance and distance <= radius_km:
+            if distance is not None and distance <= radius_km:
                 offer.distance = distance
                 nearby.append(offer)
 
@@ -89,39 +78,51 @@ class OfferService:
 
     @classmethod
     def handle_offer_posted(cls, offer):
-        print(
-            f"[offerservices]:handle_offer_posted {offer.pickup_location.latitude, offer.pickup_location.longitude}")
+        """
+        Triggered when an offer status changes to POSTED.
+        Identifies nearby carriers and sends bulk notifications.
+        """
+        # Ensure we have a valid pickup point to calculate from
+        if not offer.pickup_location:
+            print(f"[offerservices]: Skipping notifications for {offer.code} - No pickup location.")
+            return
+
+        print(f"[offerservices]: handle_offer_posted for {offer.code} "
+              f"at ({offer.pickup_location.latitude}, {offer.pickup_location.longitude})")
+        
         carriers = cls.get_nearby_carriers(offer.pickup_location)
 
         if not carriers:
+            print(f"[offerservices]: No nearby carriers found for {offer.code}.")
             return
 
-        data = [
+        # Prepare bulk notification data
+        notification_data = [
             {
                 "user": carrier,
                 "type": Notification.Type.NEW_OFFER,
                 "title": "New Delivery Nearby",
-                "message": f"{offer.code} is available near you",
+                "message": f"Package {offer.code} is available for pickup near you.",
                 "content_object": offer
             }
             for carrier in carriers
         ]
 
-        NotificationService.bulk_create(data)
+        # Use the specialized bulk service to minimize DB hits
+        try:
+            NotificationService.bulk_create(notification_data)
+            print(f"[offerservices]: Successfully notified {len(carriers)} carriers.")
+        except Exception as e:
+            # We catch this so a notification failure doesn't rollback the whole Offer Post
+            print(f"[offerservices]: Notification bulk_create failed: {str(e)}")
 
     # -------------------------
-    # 🔔 EVENT: PROPOSAL CREATED
+    # 🔔 EVENT: PROPOSAL HANDLERS
     # -------------------------
 
     @staticmethod
     def handle_new_proposal(proposal):
-        """
-        Carrier applied to an offer
-        Notify sender
-        """
-
         offer = proposal.offer
-
         NotificationService.create(
             user=offer.sender,
             type=Notification.Type.NEW_PROPOSAL,
@@ -130,32 +131,18 @@ class OfferService:
             content_object=offer
         )
 
-    # -------------------------
-    # 🔔 EVENT: PROPOSAL ACCEPTED
-    # -------------------------
-
     @staticmethod
     def handle_proposal_accepted(proposal):
-        """
-        Sender accepted a carrier
-        Notify carrier
-        """
-
         NotificationService.create(
             user=proposal.carrier,
             type=Notification.Type.PROPOSAL_ACCEPTED,
             title="You Got the Job 🎉",
-            message=f"You were selected for offer code:{proposal.offer.code}",
+            message=f"You were selected for offer code: {proposal.offer.code}",
             content_object=proposal.offer
         )
 
     @staticmethod
     def handle_proposal_rejected(proposal):
-        """
-        Sender rejected a carrier
-        Notify carrier
-        """
-
         NotificationService.create(
             user=proposal.carrier,
             type=Notification.Type.PROPOSAL_REJECTED,
@@ -166,10 +153,6 @@ class OfferService:
 
     @staticmethod
     def handle_offer_accepted(offer):
-        """
-        Offer accepted (direct or via proposal)
-        Notify carrier
-        """
         if not offer.carrier:
             return
 

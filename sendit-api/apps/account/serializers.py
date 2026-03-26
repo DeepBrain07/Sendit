@@ -104,7 +104,7 @@ class ProfileStatusSerializer(serializers.ModelSerializer):
     """Minimal serializer for login/auth responses."""
     class Meta:
         model = Profile
-        fields = ['is_new_user', 'type']
+        fields = ['is_new_user', 'type', 'is_verified']
 
 class ProfileSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(required=False, write_only=True)
@@ -120,7 +120,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             'id', 'email', 'first_name', 'type', "image", 'avatar', 'last_name', 
             'date_of_birth', 'age', 'is_new_user', 'gender', 'bio', 
             'phone_number', 'phone_verified', "location_details", "location", 
-            'created_at', 'updated_at'
+            'created_at', 'updated_at', 'is_verified'
         )
         # Note: is_new_user is now read_only here; VerifyLayout will update it.
         read_only_fields = ["phone_verified", "is_verified", "email",]
@@ -183,18 +183,30 @@ class VerificationSerializer(serializers.ModelSerializer):
         return MediaSerializer(media).data if media else None
 
     def create(self, validated_data):
+        # 1. Pop files and profile out of validated_data
         document = validated_data.pop('document', None)
         selfie = validated_data.pop('selfie', None)
-        profile = self.context['request'].user.profile
+        
+        # Check if profile was passed by the view (perform_create)
+        # If not, get it from the request context
+        profile = validated_data.pop('profile', None)
+        if not profile:
+            profile = self.context['request'].user.profile
 
+        # 2. Check for pending verifications
         if Verification.objects.filter(profile=profile, is_verified=False).exists():
             raise serializers.ValidationError("You already have a pending verification")
 
+        # 3. Create the instance safely
+        # We pass profile explicitly here, and it's no longer in validated_data
         verification = Verification.objects.create(profile=profile, **validated_data)
 
+        # 4. Handle Media Attachments
         if document:
             MediaService.attach_file(document, verification, tag='document')
         else:
+            # If you want it required, the Serializer field should handle this, 
+            # but this is a safe fallback
             raise serializers.ValidationError({"document": "This field is required."})
 
         if selfie:
