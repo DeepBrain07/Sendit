@@ -69,17 +69,31 @@ Users are forced to choose between:
 
 ---
 
+## 🎨 Design (Figma)
+
+Explore the full product design,UI screens:
+
+👉 https://www.figma.com/design/yE98ygwWVhSIoaAeIqxOEY/Sendit?node-id=0-1&p=f&t=M7QPx1YsOYm64aXe-0
+
 ## 🛠️ Tech Stack
 
-| Layer | Technology |
-|------|------------|
-| Mobile | React Native / Flutter |
-| Backend | Django + Django REST Framework |
-| Database | PostgreSQL |
-| Payments | Interswitch API |
-| Real-time | Socket.io |
-| Notifications | Firebase |
-| Storage | AWS S3 |
+### Frontend
+- **Framework:** React (with TypeScript)  
+- **Styling:** Tailwind CSS  
+- **Icons:** Iconify  
+- **Build Tool:** Vite  
+
+### Backend
+- **Language:** Python  
+- **Framework:** Django REST Framework (DRF)  
+- **Database:** PostgreSQL  
+- **API Testing:** Postman  
+
+### Services
+- **Payments:** Interswitch API  
+- **Media Storage:** Cloudinary  
+- **Real-time:** Socket.io  
+- **Notifications:** Firebase  
 
 ---
 
@@ -87,18 +101,18 @@ Users are forced to choose between:
 
 - Two-stage verification  
 - Escrow system for trust  
-- Auto-release after 48 hours  
+- Auto-release after 24 hours  
 - Marketplace pricing (accept or bid)  
 
 ---
 
 ## 👥 Team
 
-| Name | Role | Responsibility |
-|------|------|----------------|
-| Alao Heritage | 🎨 Product Designer / PM | Product strategy, UX design, documentation |
-| Timmie | 💻 Frontend Developer | Mobile app development and UI implementation |
-| Temi | ⚙️ Backend Developer | APIs, database, and system logic |
+| Name | Role | Responsibility | Social |
+|------|------|----------------|--------|
+| Alao Heritage | 🎨 Product Designer / PM | Product strategy, UX design, documentation | https://www.linkedin.com/in/alao-heritage/ |
+| Timilehin Olusa  | 💻 Frontend Developer | Mobile app development and UI implementation | https://x.com/timmieOlusa |
+| Popoola Temilorun | ⚙️ Backend Developer | APIs, database, and system logic |  https://www.linkedin.com/in/popoola-oluwatemilorun |
 
 ---
 
