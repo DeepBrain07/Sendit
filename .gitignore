@@ -1,11 +1,13 @@
 .idea
 venv/
 /.env
+
 db.sqlite3
 image/
 media/
 
 /sendit-api/restclient/*
+ ../sendit-frontend/.env
 
 # ✅ Django: Ignore all migration files EXCEPT __init__.py
 **/migrations/*
