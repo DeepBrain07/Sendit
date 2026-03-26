@@ -29,7 +29,7 @@ class Offer(models.Model):
         REVIEW = "review"
         POSTED = "posted"
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     code = models.CharField(max_length=10, unique=True)
 
     sender = models.ForeignKey(
@@ -185,7 +185,7 @@ class Proposal(models.Model):
         ACCEPTED = "accepted", "Accepted"
         REJECTED = "rejected", "Rejected"
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    uuid = models.UUIDField( default=uuid.uuid4, editable=False)
     offer = models.ForeignKey("offers.Offer", on_delete=models.CASCADE, related_name="proposals")
     carrier = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -197,9 +197,15 @@ class Proposal(models.Model):
         choices=Status.choices,
         default=Status.PENDING,
     )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.offer.code} - {self.carrier.username}"
 
 
 class OfferImpression(models.Model):
+    uuid = models.UUIDField( default=uuid.uuid4, editable=False)
+
     offer = models.ForeignKey(
         Offer, on_delete=models.CASCADE, related_name='impressions')
 

@@ -80,7 +80,6 @@ class OfferPricingSerializer(serializers.ModelSerializer):
         read_only = ["total_price", "platform_fee","urgent_fee"]
 
 
-
 class OfferTransitionSerializer(serializers.Serializer):
     """Track final offer step to start offer status"""
     action = serializers.ChoiceField(choices=[
@@ -96,15 +95,20 @@ class OfferListSerializer(serializers.ModelSerializer):
 
     pickup_location = LocationSerializer()
     delivery_location = LocationSerializer()
+    sender = UserSerializer()
+    carrier = UserSerializer()
 
     class Meta:
         model = Offer
         fields = [
             "id",
             "code",
+            "sender",
+            "carrier",
             "package_type",
             "is_fragile",
-            "pickup_location",
+            "pickup_location", 
+            "pickup_time",
             "delivery_location",
             "base_price",
             "is_urgent",
@@ -115,6 +119,8 @@ class OfferListSerializer(serializers.ModelSerializer):
             'receiver_name',
             'receiver_phone',
             "status",
+            "current_step",
+            "created_at",
         ]
 
 
@@ -127,8 +133,8 @@ class OfferSerializer(serializers.ModelSerializer):
     details = OfferDetailsSerializer(source="*", read_only=True)
     image = serializers.SerializerMethodField(read_only=True)
     pricing = serializers.SerializerMethodField(read_only=True)
-    sender_detail = serializers.SerializerMethodField(read_only=True)
-    carrier_detail = serializers.SerializerMethodField(read_only=True, allow_null=True)
+    sender = UserSerializer()
+    carrier = UserSerializer()
 
     def get_pricing(self, obj):
         pricing  = OfferPricingSerializer(obj).data
@@ -150,8 +156,9 @@ class OfferSerializer(serializers.ModelSerializer):
             "pricing",
             "status",
             "current_step",
-            "sender_detail",
-            "carrier_detail",
+            "sender",
+            "carrier",   
+            "created_at",
         ]
 
     def get_image(self, obj):
@@ -179,7 +186,7 @@ class OfferUpdateSerializer(serializers.ModelSerializer):
         model = Offer
         fields = [
             "package_type", "is_fragile", "description", "image",
-            "pickup_location", "delivery_location",
+            "pickup_location",'pickup_time', "delivery_location",
             "receiver_name", "receiver_phone",
             "base_price", "is_urgent"
         ]
@@ -207,31 +214,44 @@ class OfferUpdateSerializer(serializers.ModelSerializer):
         
         instance.save()
         return instance
-    
+
+
+class ProposalListSerializer(serializers.ModelSerializer):
+    offer_code = serializers.CharField(source="offer.code", read_only=True)
+
+    class Meta:
+        model = Proposal
+        fields = [
+            "id",
+            "offer",          # UUID
+            "offer_code",     # Human-readable
+            "carrier",        # ID only
+            "price",
+            "status",
+            "created_at",
+        ]
+        read_only_fields = fields
+
 class ProposalSerializer(serializers.ModelSerializer):
     # we need to import it here to avoid circular imports
     carrier_detail = serializers.SerializerMethodField(read_only=True)
     sender_detail = serializers.SerializerMethodField(read_only=True)
-    offer_detail = serializers.SerializerMethodField(source="offer",read_only=True)
+    offer_detail = OfferListSerializer(source="offer",read_only=True)
 
     class Meta:
         model = Proposal
-        fields = ["id", "offer", "offer_detail", "carrier", "sender_detail","carrier_detail", "price", "message", "status"]
+        fields = ["id", "offer", "offer_detail", "carrier", "carrier_detail","sender_detail", "price", "message", "status"]
         read_only_fields = ["id", "carrier", "status"]
 
-    def get_carrier_detail(self, obj):
+    def get_carrier_detail(self, obj) -> dict:
         from apps.account.serializers import ProfileSerializer
         return ProfileSerializer(obj.carrier.profile).data
     
-    def get_sender_detail(self, obj):
+    def get_sender_detail(self, obj)-> dict:
         from apps.account.serializers import ProfileSerializer
-        return ProfileSerializer(obj.sender.profile).data
-    
-    def get_offer_detail(self, obj):
-        return OfferSerializer(obj.offer).data
-    
-    
+        return ProfileSerializer(obj.offer.sender.profile).data
 
+    
     def validate(self, attrs):
         user = self.context["request"].user
         offer = attrs["offer"]

@@ -23,39 +23,6 @@ class OfferStepService:
             return current_step
 
     @classmethod
-    def update_step(cls, offer, step, data, user):
-        try:
-            with transaction.atomic():
-                # 1. Permission & Lock Checks
-                if offer.sender != user:
-                    raise ValidationError("Not your offer")
-                if offer.status in [Offer.Status.ACCEPTED, Offer.Status.IN_TRANSIT, Offer.Status.DELIVERED]:
-                    raise ValidationError("Offer can no longer be edited")
-
-                # 2. Apply the data
-                cls._apply_step_data(offer, step, data)
-
-                # 3. Validate this specific step
-                offer.validate_step(step)
-
-                # 4. Handle Status Transition for the REVIEW step
-                if step == Offer.Step.REVIEW:
-                    offer.status = Offer.Status.POSTED
-                    offer.current_step = Offer.Step.POSTED
-                    # Trigger notifications/logic via the existing service
-                    OfferService.handle_offer_posted(offer)
-                else:
-                    # Otherwise, just move the step indicator forward
-                    cls.update_step_forward_only(offer, cls.get_next_step(step))
-
-                offer.save()
-                return offer
-
-        except Exception as e:
-            print(f"[Offer Step Service] Update step failed: {str(e)}")
-            raise e
-
-    @classmethod
     def _apply_step_data(cls, offer, step, data):
         # Determine which fields are allowed to be updated in this request
         if step == Offer.Step.REVIEW:
