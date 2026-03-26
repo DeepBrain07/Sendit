@@ -1,9 +1,9 @@
 from drf_spectacular.utils import extend_schema_view, extend_schema
 from drf_spectacular.types import OpenApiTypes
-from .docstrings import (OFFERS_EMPTY_RESPONSE, OFFERS_LIST_RESPONSE,
+from .docstrings import (OFFERS_EMPTY_RESPONSE, OFFERS_LIST_RESPONSE,OFFER_UPDATE_RESPONSE,
                          OFFER_STEP_ERROR_RESPONSE, OFFER_REVIEW_RESPONSE, OFFER_TRANSITION_ERROR, OFFER_TRANSITION_REQUEST, OFFER_TRANSITION_SUCCESS)
 from apps.offers.serializers import  (OfferCreateSerializer, OfferListSerializer,
-OfferDetailsSerializer,OfferLocationSerializer,OfferPricingSerializer, 
+OfferDetailsSerializer,OfferLocationSerializer,OfferPricingSerializer, OfferUpdateSerializer,
 OfferTransitionSerializer, OfferSerializer)
 
 """
@@ -157,6 +157,21 @@ offer_review_doc = extend_schema_view(
             404: OpenApiTypes.OBJECT
         },
         examples=[OFFER_REVIEW_RESPONSE],
+        tags=['Offers'],
+    ),
+    patch=extend_schema(
+        summary='Review Offer Before Posting',
+        description=(
+            "Update the offer before posting. "
+            "This endpoint aggregates all steps (details, location, pricing, receiver info). "
+            "Used by frontend to upload all offer details at a go."
+        ),
+        request=OfferUpdateSerializer,
+        responses={
+            200: OfferUpdateSerializer,
+            404: OpenApiTypes.OBJECT
+        },
+        examples=[OFFER_REVIEW_RESPONSE, OFFER_UPDATE_RESPONSE],
         tags=['Offers'],
     )
 )

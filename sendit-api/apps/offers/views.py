@@ -18,7 +18,7 @@ from apps.offers.services.status_service import OfferStatusService
 from apps.offers.services.proposal_service import ProposalService
 from apps.payments.services.payment_service import PaymentService
 from .serializers import  (OfferCreateSerializer, OfferListSerializer,
-OfferDetailsSerializer,OfferLocationSerializer,OfferPricingSerializer, 
+OfferDetailsSerializer,OfferLocationSerializer, OfferUpdateSerializer,OfferPricingSerializer, 
 OfferTransitionSerializer,OfferSerializer, ProposalSerializer, ProposalStatusSerializer)
 from .documentation.offers.schemas import (offer_list_create_doc, offer_step_details_doc, offer_location_doc, 
                                            offer_pricing_doc, offer_review_doc, offer_transition_doc, offer_detail_doc)
@@ -42,7 +42,6 @@ class OfferListCreateView(ListCreateAPIView):
         serializer.save(sender=self.request.user)
 
     def get_queryset(self):
-        
         queryset = Offer.objects.select_related(
             "sender",
             "carrier",
@@ -56,7 +55,7 @@ class OfferListCreateView(ListCreateAPIView):
 
          # 1. Robust Boolean Check
         mine = str(params.get("mine", "")).lower() in ["1", "true", "yes"]
-        
+
         if mine:
             # User wants their own offers (regardless of status)
             queryset = queryset.filter(sender=self.request.user)
@@ -64,7 +63,7 @@ class OfferListCreateView(ListCreateAPIView):
             # Marketplace view: only show public/posted offers 
             # AND exclude the user's own offers so they don't see themselves in the market
             queryset = queryset.filter(status=Offer.Status.POSTED).exclude(sender=self.request.user)
- 
+
         # -------------------------------
         # Filter: urgent
         # -------------------------------
@@ -184,12 +183,12 @@ class BaseOfferStepView(APIView):
 
     def get(self, request, pk):
         """Return the serializer fields for browsable form"""
-        offer = get_object_or_404(Offer, pk=pk)
+        offer = get_object_or_404(Offer, pk=pk, sender=request.user)
         serializer = self.serializer_class(instance=offer)
         return Response(serializer.data)
 
     def patch(self, request, pk):
-        offer = get_object_or_404(Offer, pk=pk)
+        offer = get_object_or_404(Offer, pk=pk, sender=request.user)
 
         serializer = self.serializer_class(instance=offer,data=request.data,partial=True,context={"request": request})
         serializer.is_valid(raise_exception=True)
@@ -238,11 +237,43 @@ class OfferPricingView(BaseOfferStepView):
     serializer_class = OfferPricingSerializer
 
 @offer_review_doc
-class OfferReviewView(APIView):
-    """offer review"""
-    permission_classes = [IsAuthenticated]
+class OfferReviewView(BaseOfferStepView):
+    """
+    offer review both path and update skipping the step:
+
+    {
+    "package_type": "large",
+    "is_fragile": false,
+    "pickup_location": {
+    
+        "city": "Ogbomosho",
+        "area": "Under-G",
+        "street": "LAUTECH Main Road",
+        "landmark": "LAUTECH Second Gate",
+        "latitude": 8.1229,
+        "longitude": 4.2480
+    },
+    "delivery_location": {
+    
+        "city": "Ibadan",
+        "area": "Iwo Road",
+        "street": "Iwo Road Interchange",
+        "landmark": "Iwo Road Roundabout / Motor Park",
+        "latitude": 7.3971,
+        "longitude": 3.9402
+    },
+    "is_urgent": false,
+    "base_price": 5000.0,
+    "receiver_name": "Akinwale Bobo",
+    "receiver_phone": "08033145678"
+}   
+    """
+    permission_classes = [IsSender]
+    step = Offer.Step.REVIEW
+    serializer_class = OfferUpdateSerializer
+
     def get(self, request, pk):
-        offer = get_object_or_404(Offer, pk=pk)
+        offer = get_object_or_404(Offer, pk=pk, sender=request.user)
 
         if offer.sender != request.user:
             raise PermissionDenied()
@@ -257,6 +288,7 @@ class OfferReviewView(APIView):
 
 @offer_transition_doc
 class OfferTransitionView(APIView):
+    """offer transition: action posted,accept,reject,cancel"""
     permission_classes = [IsSender]
 
     def post(self, request, pk):
@@ -289,31 +321,15 @@ class OfferTransitionView(APIView):
             }, status=400)
 
 
-class OfferCheckoutView(APIView):
+class OfferUpdateView(BaseOfferStepView):
     """
-    Endpoint to initiate payment for an offer.
+    Endpoint to update after creation post the whole offer data.
     """
+    permission_classes = [IsAuthenticated]
+    serializer_class = OfferSerializer
+    step = Offer.Step.REVIEW
+    serializer_class = OfferPricingSerializer
 
-    permission_classes = [IsSender]
-
-    def post(self, request, pk):
-        offer = get_object_or_404(Offer, pk=pk)
-        try:
-            payment_info = PaymentService.initiate_payment(offer, request.user)
-            return Response({
-                "success": True,
-                "data": {
-                    "transaction_id": payment_info["transaction"].id,
-                    "tx_ref": payment_info["transaction"].tx_ref,
-                    "payment_url": payment_info["payment_url"],
-                    "payment_token": payment_info["payment_token"]
-                }
-            }, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({
-                "success": False,
-                "message": str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
 
 @offer_detail_doc
 class OfferView(APIView):
@@ -328,6 +344,8 @@ class OfferView(APIView):
             "success": True,
             "data": serializer.data
         })
+    
+
 
 class ProposalViewSet(viewsets.ModelViewSet):
     """
