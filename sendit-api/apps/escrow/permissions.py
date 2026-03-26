@@ -1,9 +1,17 @@
 from rest_framework.permissions import BasePermission
 
 
-class IsSender(BasePermission):
+class IsOfferOwner(BasePermission):
     def has_object_permission(self, request, view, obj):
-        return obj.type.sender == request.user
+        return obj.type.sender == request.user 
+
+class IsOfferOwnerOrIsAdmin(BasePermission):
+    """
+    Custom permission to only allow owners of an object or superusers to access it.
+    """
+
+    def has_object_permission(self, request, view, obj):
+        return obj.type.sender == request.user or request.user.is_staff
 
 
 class IsCarrier(BasePermission):

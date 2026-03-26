@@ -17,7 +17,7 @@ class WalletAdmin(admin.ModelAdmin):
         "virtual_account_bank_number",
     )
     list_filter = ("updated_at", "created_at")
-    readonly_fields = ("balance", "created_at", "updated_at")
+    # readonly_fields = ("balance", "created_at", "updated_at")
 
     fieldsets = (
         ("User Info", {
@@ -29,9 +29,6 @@ class WalletAdmin(admin.ModelAdmin):
                 "virtual_account_number",
                 "virtual_account_bank_number",
             )
-        }),
-        ("Timestamps", {
-            "fields": ("created_at", "updated_at")
         }),
     )
 

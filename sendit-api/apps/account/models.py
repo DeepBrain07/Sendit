@@ -6,7 +6,7 @@ from django.utils.timezone import now
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django_lifecycle import LifecycleModelMixin, hook, AFTER_UPDATE, AFTER_CREATE
-from django_lifecycle.conditions import WhenFieldValueIs, WhenFieldValueWas
+from django_lifecycle.conditions import WhenFieldValueIs,WhenFieldValueWas
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework.response import Response
@@ -38,8 +38,8 @@ class VerifyOTP(models.Model):
 
 
 class CustomUser(LifecycleModelMixin, AbstractUser):
-    """Custom User Model using Email as the primary identifier."""
-    id = models.UUIDField(default=uuid4, primary_key=True, unique=True, editable=False)
+    '''email, password, first name, last name, dob, age'''
+    id = models.UUIDField(default=uuid4, primary_key=True,unique=True, editable=False)
     username = None
     email = models.EmailField(unique=True)
     agree_to_privacy_policy = models.BooleanField(default=False)
@@ -59,28 +59,25 @@ class CustomUser(LifecycleModelMixin, AbstractUser):
     @hook(AFTER_UPDATE,
           condition=WhenFieldValueWas('is_active', False) & WhenFieldValueIs('is_active', True))
     def create_profile(self):
-        """Automatically create a profile when the user account is activated."""
         try:
             Profile.objects.get_or_create(
-                user=self, 
-                email=self.email, 
-                first_name=self.first_name, 
-                last_name=self.last_name
-            )
-        except Exception:
+                user=self, email=self.email, first_name=self.first_name, last_name=self.last_name)
+            # Profile.objects.create(user=self, email=self.email, first_name=self.first_name, last_name=self.last_name)
+        except Exception as e:
+            # print(f'user has a previous  profile not a new user: {self.email}, error:{str(e)}')
             pass
 
     @property
     def get_jwt_tokens(self):
-        """Generates access and refresh tokens including the new user status."""
+        """Get both the refresh and access token for user"""
+
         try:
             refresh = RefreshToken.for_user(user=self)
             return {
                 'access_token': str(refresh.access_token),
-                'refresh_token': str(refresh),
-                # Accessing is_new_user from the related profile
-                'is_new_user': getattr(self.profile, 'is_new_user', True) 
+                'refresh_token': str(refresh)
             }
+
         except TokenError as e:
             data = {'status': 'error', 'message': str(e)}
             return Response(data, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
@@ -97,52 +94,35 @@ class Profile(LifecycleModelMixin, models.Model):
     )
 
     media = GenericRelation(Media)
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL, 
-        primary_key=True, 
-        on_delete=models.CASCADE, 
-        related_name='profile'
-    )
-    type = models.CharField(max_length=20, choices=USER_TYPE_CHOICES, default="carrier")
-    email = models.EmailField(max_length=100)
-    first_name = models.CharField(max_length=100, blank=True)
-    last_name = models.CharField(max_length=100, blank=True)
-    gender = models.CharField(max_length=50, choices=GENDER_CHOICES, blank=True)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, primary_key=True, on_delete=models.CASCADE, related_name='profile')
+    type = models.CharField(max_length=20, choices=USER_TYPE_CHOICES , default="carrier")
+    email  = models.EmailField(max_length=100)
+    first_name  = models.CharField(max_length=100,  blank=True)
+    last_name  = models.CharField(max_length=100,  blank=True)
+    gender = models.CharField(max_length=50, choices=GENDER_CHOICES)
     bio = models.TextField(null=True, blank=True)
-    phone_number = models.CharField(max_length=20, null=True, blank=True)
+    phone_number = models.CharField(max_length=20, null=True)
     phone_verified = models.BooleanField(default=False)
     date_of_birth = models.DateField(null=True, blank=True)
 
-    # Status tracking
-    is_new_user = models.BooleanField(default=True)
-    is_verified = models.BooleanField(
-        default=False, 
-        help_text="True when user identification documents are approved."
-    )
-    
+    is_verified = models.BooleanField(default=False, help_text="when a user means of verification(nin,driver's license) is accepted.")
     location = models.ForeignKey(
-        "core.Location", on_delete=models.SET_NULL, null=True, related_name="user_location"
-    )
+        "core.Location", on_delete=models.SET_NULL, null=True, related_name="user_location")
 
     created_at = models.DateField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     @property
     def full_name(self):
-        return f'{self.first_name} {self.last_name}'.strip()
+        return f'{self.first_name} {self.last_name}'
 
     @property
     def avatar(self):
-        return self.media.filter(tag='avatar').first()
+        return self.media.filter(tag='avatar').first() or ""
 
-    @hook(AFTER_UPDATE, when_any=['first_name', 'last_name', 'email'], has_changed=True)
-    def update_user_details(self):
-        """Syncs changes back to the CustomUser model."""
-        CustomUser.objects.filter(id=self.user.id).update(
-            email=self.email, 
-            first_name=self.first_name, 
-            last_name=self.last_name
-        )
+    @hook(AFTER_UPDATE,when_any=['first_name','last_name','email'], has_changed=True)
+    def update_user_detials(self):
+        CustomUser.objects.filter(id=self.user.id).update(email=self.email, first_name=self.first_name, last_name=self.last_name)
 
     def __str__(self):
         return f'{self.user.email} profile'
@@ -162,7 +142,7 @@ class Profile(LifecycleModelMixin, models.Model):
             user = CustomUser.objects.get(id=self.user_id)
             return user.delete()
         except CustomUser.DoesNotExist:
-            return super().delete(*args, **kwargs)
+            pass
 
     class Meta:
         ordering = ['-created_at']
@@ -175,39 +155,52 @@ class Verification(models.Model):
         ('driver_license', 'Driver License'),
         ('voter_card', 'Voter Card'),
     )
-    id = models.UUIDField(default=uuid4, primary_key=True, unique=True, editable=False)
+    id = models.UUIDField(default=uuid4, primary_key=True,unique=True, editable=False)
     media = GenericRelation(Media)
     profile = models.ForeignKey(
         'Profile', on_delete=models.CASCADE, related_name='verifications'
     )
-    verification_type = models.CharField(max_length=50, choices=VERIFICATION_TYPES)
+    verification_type = models.CharField(
+        max_length=50, choices=VERIFICATION_TYPES)
     id_number = models.CharField(max_length=100)
     verified_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        null=True, blank=True,
+        null=True,
+        blank=True,
         on_delete=models.SET_NULL,
         related_name='verified_verifications'
     )
     verified_at = models.DateTimeField(null=True, blank=True)
-    is_verified = models.BooleanField(default=False)
-    note = models.TextField(blank=True, null=True)
+    is_verified = models.BooleanField(default=False)  # Admin approval
+    note = models.TextField(blank=True,null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # Generic relation to media handled via MediaService
     @property
-    def documents(self):
-        return self.media.filter(tag='document')
+    def documents(self) -> str:
+        """
+        Return all media files tagged as 'document' linked to this verification.
+        """
+        return self.media.filter(tag='document') or ""
 
     @property
-    def selfie_image(self):
-        return self.media.filter(tag='selfie').first()
+    def selfie_image(self) ->str:
+        """
+        Return media file tagged as 'selfie'.
+        """
+        return self.media.filter(tag='selfie').first() or ""
 
     def clean(self):
-        """Validation logic for different ID types."""
+        """
+        Optional model-level validation to enforce document number rules.
+        """
         if self.verification_type == 'nin' and len(self.id_number) != 11:
             raise ValidationError("NIN must be exactly 11 digits")
         if self.verification_type == 'passport' and not self.id_number.isalnum():
             raise ValidationError("Passport number must be alphanumeric")
+        if self.verification_type == 'driver_license' and len(self.id_number) < 5:
+            raise ValidationError("Driver license number is too short")
         if self.verification_type == 'voter_card' and len(self.id_number) != 10:
             raise ValidationError("Voter card number must be 10 characters")
 
@@ -216,10 +209,10 @@ class Verification(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.profile.user.email} - {self.verification_type}"
+        return f"{self.profile.user.email} - {self.verification_type} ({'Verified' if self.is_verified else 'Pending'})"
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = [ '-created_at']
         constraints = [
             models.UniqueConstraint(
                 fields=['profile'],

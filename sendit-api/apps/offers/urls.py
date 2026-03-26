@@ -5,6 +5,10 @@ from . import views
 router = DefaultRouter()
 router.register(r"proposals", views.ProposalViewSet, basename="proposal")
 
+# offers_router = routers.NestedSimpleRouter(router, r'offers', lookup='offer')
+# offers_router.register(r'proposals', views.ProposalViewSet, basename='offer-Proposal')
+
+
 urlpatterns = [
 
     # 🟢 lISTT/ CREATE OFFER (entry point)
