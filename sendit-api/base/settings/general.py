@@ -171,6 +171,8 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10,
     'COERCE_DECIMAL_TO_STRING': False,
     'DEFAULT_AUTHENTICATION_CLASSES': (
+            'apps.account.custom_auth.CookieJWTAuthentication',
+            'rest_framework.authentication.SessionAuthentication',  # For browsable API
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (

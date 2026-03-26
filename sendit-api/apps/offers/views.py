@@ -9,11 +9,7 @@ from django.utils import timezone
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import PermissionDenied,  ValidationError
-<<<<<<< HEAD
-
-=======
 from .permissions import IsOfferOrProposalOwnerOrAdmin
->>>>>>> 71a0d3bef46ac90eb0afec2f86fd694362557f5b
 
 from .models import Offer, Proposal
 from .services.step_service import OfferStepService
