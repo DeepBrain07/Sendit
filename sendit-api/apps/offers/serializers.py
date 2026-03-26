@@ -26,10 +26,10 @@ class OfferCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = self.context["request"].user
-        if not user.profile.is_verified:
-            raise serializers.ValidationError("User profile is not verified")
-        if not user.profile.type == "sender":
-            raise serializers.ValidationError("User profile is not a sender")
+        # if not user.profile.is_verified:
+        #     raise serializers.ValidationError("User profile is not verified")
+        # if not user.profile.type == "sender":
+        #     raise serializers.ValidationError("User profile is not a sender")
 
         return Offer.objects.create(
             sender=user,
@@ -192,16 +192,25 @@ class OfferUpdateSerializer(serializers.ModelSerializer):
         ]
 
     def update(self, instance, validated_data):
+        print(f"\n--- DEBUG: Starting Update for {instance.code} ---")
+        print(f"Initial Status: {instance.status}")
+        
         pickup_location = validated_data.pop("pickup_location", None)
         delivery_location = validated_data.pop("delivery_location", None)
         
         if pickup_location:
+            print(f"Creating Pickup Location: {pickup_location}")
             instance.pickup_location = Location.objects.create(**pickup_location)
         if delivery_location:
+            print(f"Creating Delivery Location: {delivery_location}")
             instance.delivery_location = Location.objects.create(**delivery_location)
         
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+            
+        # Force the status to posted
+        instance.status = "posted"
+        instance.current_step = "posted"
         
         instance.save()
         return instance

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../SignInLayout/style.css'
 import { Icon } from '@iconify/react/dist/iconify.js';
@@ -6,9 +6,11 @@ import { Step1 } from './Step1';
 import { Step2 } from './Step2';
 import { Step3 } from './Step3';
 import { Step4 } from './Step4';
+import api from '../../api/axios'; // Assuming your axios instance is here
 
 const Send = () => {
   const navigate = useNavigate();
+  const [offerId, setOfferId] = useState<string>('');
   const [step, setStep] = useState<number>(1);
 //   step 1
   const [isFragile, setIsFragile] = useState<boolean | null>(null);
@@ -27,6 +29,34 @@ const Send = () => {
     const [amount, setAmount] = useState<string>('2500');
     const [isUrgent, setIsUrgent] = useState<boolean>(false);
   const steps = ['Details', 'Location', 'Pricing', 'Review']
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchOfferId = async () => {
+      while (isMounted && !offerId) {
+        try {
+          const response = await api.post('/offers/');
+          if (response.data) {
+            setOfferId(response.data.data.id);
+            console.log("Received Offer ID:", response.data.data.id);
+            break; 
+          }
+        } catch (error) {
+          console.error("Polling for Offer ID failed:", error);
+        }
+        // Wait for 2 seconds before the next poll to avoid overloading
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    };
+
+    fetchOfferId();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [offerId]);
+
   return (
     <div >
         
@@ -65,7 +95,7 @@ const Send = () => {
             {step === 1 ? <Step1 setStep={setStep} setIsFragile={setIsFragile} setOfferType={setOfferType} setOfferImage={setOfferImage} setOfferDescription={setOfferDescription}/> : 
             step === 2 ? <Step2 setStep={setStep} setCity={setCity} setStreet={setStreet} setTime={setTime} setDestinationCity={setDestinationCity} setDestinationStreet={setDestinationStreet} setReceiverName={setReceiverName} setReceiverContact={setReceiverContact}/> : 
             step === 3 ? <Step3 setStep={setStep} amount={amount} setAmount={setAmount} setIsUrgent={setIsUrgent}/> : 
-            <Step4  amount={amount} isFragile={isFragile} offerType={offerType} offerImage={offerImage} isUrgent={isUrgent} from={city}  to={destinationCity} receiverName={receiverName} receiverContact={receiverContact}/>}
+            <Step4 offerId={offerId} amount={amount} isFragile={isFragile} offerType={offerType} offerImage={offerImage} isUrgent={isUrgent} from={city}  to={destinationCity} receiverName={receiverName} receiverContact={receiverContact}/>}
         </div>
 
         

@@ -16,10 +16,6 @@ const VerifyLayout = () => {
   const [faceData, setFaceData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  /**
-   * Helper: Converts Base64 string from webcam to a File object
-   * matches what Django's ImageField expects.
-   */
   const dataURLtoFile = (dataurl: string, filename: string) => {
     const arr = dataurl.split(',');
     const mime = arr[0].match(/:(.*?);/)![1];
@@ -32,9 +28,15 @@ const VerifyLayout = () => {
     return new File([u8arr], filename, { type: mime });
   };
 
+  const typeMapper: Record<string, string> = {
+    "NIN Slip": "nin",
+    "International Passport": "passport",
+    "Driver License": "driver_license",
+    "Voter Card": "voter_card"
+  };
+
   useEffect(() => {
     const triggerVerificationFlow = async () => {
-      // Logic only triggers once faceData is captured and loading is true
       if (!isLoading || !faceData) return;
 
       try {
@@ -48,17 +50,16 @@ const VerifyLayout = () => {
         }
 
         /**
-         * 1. Update Profile (Phone, Avatar, and Onboarding Status)
+         * 1. Update Profile (PATCH)
          */
         const profileFormData = new FormData();
         profileFormData.append('phone_number', phone);
         profileFormData.append('type', 'carrier');
-        // Now that this field is on the Profile model, we send it here
         profileFormData.append('is_new_user', "false"); 
         
-        const base64Image = faceData.image || faceData; 
-        if (base64Image && typeof base64Image === 'string') {
-          const imageFile = dataURLtoFile(base64Image, `avatar_${userId}.jpg`);
+        const base64Selfie = faceData.image || faceData; 
+        if (base64Selfie && typeof base64Selfie === 'string') {
+          const imageFile = dataURLtoFile(base64Selfie, `avatar_${userId}.jpg`);
           profileFormData.append('image', imageFile);
         }
 
@@ -68,43 +69,58 @@ const VerifyLayout = () => {
         });
 
         /**
-         * 2. Create Verification Record (ID details)
-         * Note: Ensure this hits your Verification model endpoint, usually a POST
+         * 2. Create Verification Record (POST)
          */
         if (identificationData) {
           console.log("Submitting Verification Record...");
-          await api.patch(`/users/${userId}/profiles/`, {
-            verification_type: identificationData.type,
-            id_number: identificationData.number,
+          const verifyFormData = new FormData();
+
+          // backend field: verification_type
+          const rawType = identificationData.documentType || identificationData.type;
+          const backendType = typeMapper[rawType] || (rawType ? rawType.toLowerCase() : "nin");
+          verifyFormData.append('verification_type', backendType); 
+
+          // backend field: id_number
+          const idNum = identificationData.idNumber || identificationData.id_number || identificationData.number;
+          verifyFormData.append('id_number', idNum);
+
+          // Append Selfie File (for GenericRelation processing)
+          if (base64Selfie && typeof base64Selfie === 'string') {
+            const selfieFile = dataURLtoFile(base64Selfie, `selfie_${userId}.jpg`);
+            verifyFormData.append('selfie', selfieFile);
+          }
+
+          // Append Document File (for GenericRelation processing)
+          const docBase64 = identificationData.image || identificationData.document;
+          if (docBase64 && typeof docBase64 === 'string') {
+            const docFile = dataURLtoFile(docBase64, `document_${userId}.jpg`);
+            verifyFormData.append('document', docFile);
+          }
+
+          await api.patch(`/users/${userId}/profiles/`, verifyFormData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
           });
         }
 
         /**
          * 3. Sync Local Storage
-         * We update the profile data and ensure is_new_user is false 
-         * so the app knows onboarding is complete.
          */
         const updatedUser = {
             ...storedUser,
             profile: {
                 ...profileResponse.data,
-                is_new_user: false // Force local state to false
+                is_new_user: false 
             }
         };
         localStorage.setItem('user', JSON.stringify(updatedUser));
-        console.log("✅ Onboarding complete. Local storage synced.");
-
-        // Move to final step
         setStep(5);
 
       } catch (error: any) {
         const errorData = error.response?.data;
         console.error("❌ API Error:", errorData || error.message);
-        
         const errorMessage = typeof errorData === 'object' 
           ? Object.values(errorData).flat()[0] 
-          : "Could not complete verification. Please check your details.";
-          
+          : "Could not complete verification.";
         alert(errorMessage);
       } finally {
         setIsLoading(false);
@@ -117,19 +133,14 @@ const VerifyLayout = () => {
   return (
     <div className="background !justify-start">
       <div className="gradient-layer-alt" />
-      
       <div className={`px-8 w-full flex items-center ${step > 1 ? 'justify-between' : 'justify-end'} my-12`}>
         {step > 1 && step < 5 && (
-          <button 
-            onClick={() => setStep(prev => prev - 1)} 
-            className="p-2 -ml-2 bg-white rounded-[50%] hover:bg-gray-100 transition-colors"
-          >
+          <button onClick={() => setStep(prev => prev - 1)} className="p-2 -ml-2 bg-white rounded-[50%]">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <path d="M15 18L9 12L15 6" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
         )}
-        
         {step < 5 && (
           <div className="flex gap-1">
             {[1, 2, 3, 4].map((i) => (
@@ -138,7 +149,6 @@ const VerifyLayout = () => {
           </div>
         )}
       </div>
-      
       <div className='w-full'>
         {step === 1 && <PhoneInput setStep={setStep} setPhone={setPhone} />}
         {step === 2 && <PhoneVerification phone={phone} setStep={setStep}/>}
