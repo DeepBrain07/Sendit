@@ -185,6 +185,7 @@ class Proposal(models.Model):
         ACCEPTED = "accepted", "Accepted"
         REJECTED = "rejected", "Rejected"
 
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     offer = models.ForeignKey("offers.Offer", on_delete=models.CASCADE, related_name="proposals")
     carrier = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
