@@ -12,6 +12,6 @@ class EscrowSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'offer_id', 'amount',  'status',
             'is_released', 'released_at', 'released_amount_to_carrier', 
-            'released_by', 'created_at'
+            'released_by', "note",'created_at'
         ]
         read_only_fields = ['status', 'is_released', 'released_at', 'released_by']

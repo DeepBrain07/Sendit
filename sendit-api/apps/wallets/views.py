@@ -8,7 +8,6 @@ from .services.wallet_services import WalletService
 from .utils import apply_date_filter, WalletHistoryPagination
 from .documentation.wallets.schemas import wallet_docs
 
-
 @wallet_docs
 class WalletViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]

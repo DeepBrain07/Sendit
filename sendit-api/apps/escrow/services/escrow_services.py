@@ -4,6 +4,7 @@ from django.utils import timezone
 from decimal import Decimal
 from django.utils import timezone
 from django.db import transaction as db_transaction
+from apps.core.services.notification_service import NotificationService, Notification
 
 class EscrowService:
     """
@@ -18,7 +19,7 @@ class EscrowService:
 
     @classmethod
     @db_transaction.atomic
-    def create_escrow(cls, offer, amount=None):
+    def create_escrow_for_offer(cls, offer, amount=None):
         """
         Create a new escrow for a given offer
 
@@ -108,8 +109,11 @@ class EscrowService:
         if not admin_user.is_staff:
             raise ValueError("Admin user required to release escrow and fund carrier wallet")
 
+        "pick ~!"
+         
         carrier_wallet = escrow.offer.carrier.wallet
         carrier_wallet.balance += escrow.amount
+        print(f"Carrier wallet balance before release: {carrier_wallet.balance}")
         carrier_wallet.save(update_fields=["balance"])
 
         WalletLedgerEntry.objects.create(
@@ -124,6 +128,15 @@ class EscrowService:
         escrow.is_released = True
         escrow.released_at = timezone.now()
         escrow.save(update_fields=["status", "is_released", "released_at","released_by"])
+       
+        NotificationService.create(
+            user=escrow.offer.carrier,
+            type=Notification.Type.ESCROW_RELEASED,
+            title="Escrow Released",
+            message=f"Escrow {escrow.id} payment of {escrow.amount} has been released to you",
+            content_object=escrow
+        )
+  
         return escrow
 
     @classmethod
@@ -152,7 +165,7 @@ class EscrowService:
 
     @classmethod
     @db_transaction.atomic
-    def dispute(cls, escrow: Escrow, release_amount_to_carrier: Decimal, admin_user):
+    def dispute(cls, escrow: Escrow, release_amount_to_carrier: Decimal, admin_user, note=None):
         """
         Handle dispute settlement.
         release_amount_to_carrier is the portion paid to the carrier.
@@ -160,7 +173,12 @@ class EscrowService:
         """
         if escrow.status not in [Escrow.Status.LOCKED, Escrow.Status.RELEASE_READY]:
             raise ValueError("Only locked or ready escrow can be disputed")
+        
+        if not admin_user.is_staff:
+            raise ValueError("Admin user required to dispute escrow")
 
+        if not note:
+            note = f"Dispute settlement for escrow {escrow.id}"
         sender_wallet = escrow.offer.sender.wallet
         carrier_wallet = escrow.offer.carrier.wallet
 
@@ -189,5 +207,6 @@ class EscrowService:
         # Assign admin user to disputed escrow
         escrow.released_by = admin_user
         escrow.status = Escrow.Status.DISPUTED
-        escrow.save(update_fields=["status","released_by"])
+        escrow.note = note
+        escrow.save(update_fields=["status","released_by","note"])
         return escrow

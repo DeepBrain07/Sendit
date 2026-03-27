@@ -2,7 +2,7 @@ from django.db import transaction
 from rest_framework.exceptions import ValidationError
 from ..models import Offer
 from .offer_service import OfferService
-
+from apps.escrow.services.escrow_services import EscrowService
 
 class OfferStatusService:
     """
@@ -26,10 +26,10 @@ class OfferStatusService:
         if action == Offer.Status.IN_TRANSIT:
             return cls._start_transit(offer, user)
 
-        if action == offer.Status.DELIVERED:
+        if action == Offer.Status.DELIVERED:
             return cls._deliver(offer, user)
 
-        if action == offer.Status.CANCELLED:
+        if action == Offer.Status.CANCELLED:
             return cls._cancel(offer, user)
 
         if action == Offer.Status.DISPUTED:
@@ -39,6 +39,7 @@ class OfferStatusService:
 
     @staticmethod
     def _post(offer, user):
+
         if offer.sender != user:
             raise ValidationError("Not your offer")
 
@@ -49,6 +50,8 @@ class OfferStatusService:
         offer.current_step = Offer.Step.POSTED
         offer.is_complete()
         offer.save()
+        EscrowService.create_escrow_for_offer(offer)
+
 
         OfferService.handle_offer_posted(offer)
 
@@ -79,7 +82,8 @@ class OfferStatusService:
 
     @staticmethod
     def _start_transit(offer, user):
-        if offer.carrier != user:
+        "sender can tell the offer is on trabsit"
+        if offer.sender != user or offer.proposal.carrier != user:
             raise ValidationError("Not your delivery")
 
         if offer.status != Offer.Status.ACCEPTED:
@@ -87,12 +91,13 @@ class OfferStatusService:
 
         offer.status = Offer.Status.IN_TRANSIT
         offer.save()
+        EscrowService.lock_escrow(offer.escrow)
 
         return offer
 
     @staticmethod
     def _deliver(offer, user):
-        if offer.carrier != user:
+        if offer.sender != user or offer.proposal.carrier != user:
             raise ValidationError("Not your delivery")
 
         if offer.status != Offer.Status.IN_TRANSIT:
@@ -104,8 +109,7 @@ class OfferStatusService:
 
             # Mark escrow as ready for release
             try:
-                escrow = offer.escrow
-                escrow.mark_release_ready()
+                EscrowService.mark_release_ready(offer.escrow)
             except Exception as e:
                 # Log that escrow couldn't be updated
                 print(

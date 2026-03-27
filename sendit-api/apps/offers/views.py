@@ -287,7 +287,16 @@ class OfferReviewView(BaseOfferStepView):
 
 @offer_transition_doc
 class OfferTransitionView(APIView):
-    """offer transition: action posted,accept,reject,cancel"""
+    """offer transition: action posted,accept,reject,cancel
+    The offer lifecyle trnsition 
+    - posted: The offer is posted and is now available for proposal.
+    - accept: The offer is accepted by the carrier(only after proposal).
+    - in_transit: The offer is in transit.
+    - delivered: The offer is delivered.
+    - cancelled: The offer is cancelled by the sender.
+    - reject: The offer is rejected by the carrier.
+    - cancel: The offer is cancelled by the sender.
+    """
     permission_classes = [IsSender]
 
     def post(self, request, pk):
@@ -320,15 +329,6 @@ class OfferTransitionView(APIView):
             }, status=400)
 
 
-class OfferUpdateView(BaseOfferStepView):
-    """
-    Endpoint to update after creation post the whole offer data.
-    """
-    permission_classes = [IsAuthenticated]
-    serializer_class = OfferSerializer
-    step = Offer.Step.REVIEW
-    serializer_class = OfferPricingSerializer
-
 
 @offer_detail_doc
 class OfferView(APIView):
@@ -354,6 +354,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
     - Senders can accept a proposal (it rejects for other automatically)
     - Senders can reject a proposal
     """
+
     http_method_names = ["get", "post", "patch"]
     permission_classes = [IsOfferOrProposalOwnerOrAdmin]
     serializer_class = ProposalListSerializer
@@ -383,8 +384,8 @@ class ProposalViewSet(viewsets.ModelViewSet):
         try:
             proposal = ProposalService.create_proposal(
                 offer=offer,
-                price=offer.carrier_price,
-                carrier=request.user
+                carrier=request.user,
+                price=serializer.validated_data["price"]
             )
             return Response(ProposalListSerializer(proposal).data, status=status.HTTP_201_CREATED)
         except ValidationError as e:
@@ -407,7 +408,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
                                        "amount": proposal.offer.escrow.amount}}, status=status.HTTP_200_OK)
         except ValidationError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        
+
     @action(detail=True, methods=["post"], url_path="reject")
     def reject(self, request, pk=None):
         """
@@ -419,3 +420,5 @@ class ProposalViewSet(viewsets.ModelViewSet):
             return Response({"message": "Proposal rejected successfully"}, status=status.HTTP_200_OK)
         except ValidationError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
