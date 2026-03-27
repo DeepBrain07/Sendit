@@ -100,7 +100,7 @@ const SenderDashboard = () => {
     const token = userData?.access_token || userData?.token?.access_token;
     const currentUserId = userData?.id || userData?.user?.id;
     const otherUser = offer.sender.id === currentUserId ? 'Carrier' : 'Sender';
-    
+    console.log(token)
     return (
         <div className='bg-[#FBFBFBB2] p-4 flex flex-col gap-8 min-h-screen'>
             <div className={` w-full flex items-center gap-4 `}>

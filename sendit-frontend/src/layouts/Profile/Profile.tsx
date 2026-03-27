@@ -1,5 +1,4 @@
 import DashboardLayout from "../DashboardLayout/DashboardLayout"
-import GradientBackground from "../../components/GradientBackground"
 import { useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { profileImage } from "../../assets/images";

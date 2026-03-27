@@ -1,6 +1,6 @@
 import Modal from "../../components/Modal"
 import { Button } from "../../components/Button"
-import { useEffect, useState } from "react";
+import {useState } from "react";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import Select from "react-select";
 

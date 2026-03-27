@@ -16,13 +16,13 @@ const Send = () => {
   const [isFragile, setIsFragile] = useState<boolean | null>(null);
   const [offerType, setOfferType] = useState<string>("");
   const [offerImage, setOfferImage] = useState<File | null>(null);
-  const [offerDescription, setOfferDescription] = useState<string>('');
+  const [_offerDescription, setOfferDescription] = useState<string>('');
 //   step 2
   const [city, setCity] = useState<string>('');
-  const [street, setStreet] = useState<string>('');
-    const [time, setTime] = useState<string>('');
+  const [_street, setStreet] = useState<string>('');
+    const [_time, setTime] = useState<string>('');
     const [destinationCity, setDestinationCity] = useState<string>('');
-    const [destinationStreet, setDestinationStreet] = useState<string>('');
+    const [_destinationStreet, setDestinationStreet] = useState<string>('');
     const [receiverName, setReceiverName] = useState<string>('');
     const [receiverContact, setReceiverContact] = useState<string>('');
     // step 3

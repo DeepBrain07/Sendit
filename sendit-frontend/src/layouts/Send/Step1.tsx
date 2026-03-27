@@ -1,6 +1,5 @@
 import { Button } from "../../components/Button";
 import { useState, useRef } from "react";
-import { logo2 } from "../../assets/images";
 import { Icon } from "@iconify/react/dist/iconify.js";
 
 export const Step1 = ({setStep, setOfferType, setIsFragile, setOfferImage, setOfferDescription}: { setStep: (step: number) => void; setOfferType: (type: string) => void; setIsFragile: (isFragile: boolean) => void; setOfferImage: (image: File | null) => void; setOfferDescription: (description: string) => void }) => {

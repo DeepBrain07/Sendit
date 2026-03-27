@@ -35,7 +35,7 @@ const AddMoneyModal = ({ accountDetails, isAddMoneyModalOpen, setIsAddMoneyModal
     useEffect(() => {
         if (!isAddMoneyModalOpen) return;
 
-        let intervalId: NodeJS.Timeout;
+        let intervalId: ReturnType<typeof setInterval>;
 
         // 1. Immediate check in case it's already in the DOM
         if (checkSDK()) return;

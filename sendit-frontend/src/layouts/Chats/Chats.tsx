@@ -70,7 +70,6 @@ const Chats = () => {
                 key={room.id}
                 chatId={room.id.toString()}
                 name={displayName}
-                notifications={room.unread_count}
                 lastMessage={room.last_message?.text || "No messages yet"}
                 // Fallback to a default avatar if no profile image exists in participant data
                 profileImage={otherParticipant?.avatar || "https://ui-avatars.com/api/?name=" + displayName}
@@ -86,8 +85,9 @@ const Chats = () => {
   );
 };
 
-const ChatCard = ({name, chatId, notifications, lastMessage, profileImage, lastMessageTime}: {name: string, chatId: string, notifications: number, lastMessage: string, profileImage: string, lastMessageTime: string}) => {
-    const navigate = useNavigate();
+const ChatCard = ({name, chatId, lastMessage, profileImage, lastMessageTime}: {name: string, chatId: string,  lastMessage: string, profileImage: string, lastMessageTime: string}) => {
+    
+  const navigate = useNavigate();
     return (
         <div 
           onClick={() => navigate(ProviderRoutePaths.specificChat.replace(':chatId', chatId))} 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import  { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../SignInLayout/style.css'
 import DashboardLayout from '../DashboardLayout/DashboardLayout';
@@ -17,10 +17,7 @@ const Notifications = () => {
     const fetchNotifications = async () => {
       try {
         setLoading(true);
-        // Changed endpoint to /notifications/
         const response = await api.get('/notifications/');
-        
-        // Based on your response body: response.data.results.results
         const data = response.data.results?.results || [];
         setNotifications(data);
       } catch (error) {
@@ -34,7 +31,6 @@ const Notifications = () => {
     fetchNotifications();
   }, []);
 
-  // Helper to format the Django timestamp
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -64,9 +60,9 @@ const Notifications = () => {
           notifications.map((notif) => (
             <NotificationCard 
               key={notif.id}
+              proposalId={notif.id}
               title={notif.title}
               time={formatTime(notif.created_at)} 
-              // Using defaults since these fields aren't in your current GET response
               amount="2500" 
               carrierName="System Update" 
               to="Check details" 
@@ -82,7 +78,20 @@ const Notifications = () => {
   );
 };
 
-const NotificationCard = ({ title, time, amount, carrierName, to, avatar, isRead }: { title: string; time: string; amount: string; carrierName: string; to: string; avatar: string; isRead: boolean }) => {
+const NotificationCard = ({ proposalId, title, time, amount, carrierName, to, avatar, isRead }: { proposalId: number; title: string; time: string; amount: string; carrierName: string; to: string; avatar: string; isRead: boolean }) => {
+    console.log("Notification is read:", isRead);
+    console.log("Notification title:", to);
+    const handleAction = async (action: 'accept' | 'reject') => {
+        try {
+            // Both actions directed to /accept/ per instructions
+            await api.post(`/offers/proposals/${proposalId}/accept/`);
+            toast.success(`Proposal ${action === 'accept' ? 'Accepted' : 'Rejected'}!`);
+        } catch (error) {
+            console.error(`Error during ${action}:`, error);
+            toast.error(`Failed to ${action} proposal`);
+        }
+    }
+
     return (
         <div className={`flex flex-col border-b-2 border-gray-100 p-2 py-4 gap-2 `}>
             <div className='flex justify-between items-center'>
@@ -121,8 +130,16 @@ const NotificationCard = ({ title, time, amount, carrierName, to, avatar, isRead
             </div>
 
             <div className='flex justify-between gap-4 mt-2'>
-                <Button title="Dismiss" onClick={() => toast.error("Dismissed")} className='!bg-gray-100 !text-black !py-2 !text-xs'/>
-                <Button title="Accept Proposal" onClick={() => toast.success("Opening...")} className='!py-2 !text-xs' />
+                <Button 
+                    title="Dismiss" 
+                    onClick={() => handleAction('reject')} 
+                    className='!bg-gray-100 !text-black !py-2 !text-xs'
+                />
+                <Button 
+                    title="Accept Proposal" 
+                    onClick={() => handleAction('accept')} 
+                    className='!py-2 !text-xs' 
+                />
             </div>
         </div>
     );

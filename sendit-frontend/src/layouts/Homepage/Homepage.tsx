@@ -1,7 +1,7 @@
 import DashboardLayout from "../DashboardLayout/DashboardLayout"
 import { profileImage } from "../../assets/images";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 

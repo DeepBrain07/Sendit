@@ -66,7 +66,8 @@ class ChatRoomViewSet(ReadOnlyModelViewSet):
 
 
 class NotificationListView(ReadOnlyModelViewSet):
-    queryset = Notification.objects.all() 
+    # Fix 1: Provide a base queryset and lookup_field for schema generation
+    queryset = Notification.objects.all()
     lookup_field = 'id'
     serializer_class = NotificationSerializer
     permission_classes = [IsAuthenticated]
