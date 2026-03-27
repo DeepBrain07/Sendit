@@ -42,7 +42,7 @@ class EscrowViewSet(viewsets.ReadOnlyModelViewSet):
         escrow = self.get_object()
         # Pass the admin user and any extra data (like partial release amount)
         amount = request.data.get('amount', escrow.amount)
-        EscrowService.release_funds(escrow, admin_user=request.user)
+        EscrowService.release_funds(escrow, user=request.user)
         return Response({"status": "Funds released"}, status=status.HTTP_200_OK)
 
     @decorators.action(detail=True, permission_classes=[IsAdminUser], methods=['post'])
