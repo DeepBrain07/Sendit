@@ -6,7 +6,7 @@
 
 ## 📌 Overview
 
-SendIt is a peer-to-peer delivery platform that connects people who need to send packages with verified travelers already heading in the same direction.
+SendIt is a peer-to-peer delivery platform that connects people like aunt titi a drop shipper who need to send packages from Oshodi to Ibadan with verified travelers already heading in the same direction.
 
 It enables affordable, secure, and trustworthy delivery by leveraging everyday travel.
 
@@ -72,6 +72,7 @@ Users are forced to choose between:
 ## 🎨 Design (Figma)
 
 Explore the full product design,UI screens:
+![Sendit Homepage](https://github.com/DeepBrain07/Sendit/blob/features/api/sendit-homepge.png)
 
 👉 https://www.figma.com/design/yE98ygwWVhSIoaAeIqxOEY/Sendit?node-id=0-1&p=f&t=M7QPx1YsOYm64aXe-0
 
