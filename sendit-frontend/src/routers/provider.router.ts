@@ -10,6 +10,7 @@ import Profile from "../layouts/Profile/Profile";
 import Chats from "../layouts/Chats/Chats";
 import SpecificChat from "../layouts/Chats/SpecificChat";
 import SenderDashboard from "../layouts/DashboardLayout/SenderDashboard";
+import Notifications from "../layouts/Notifications/Notifications";
 
 export const ProviderRoutePaths = {
   Root: "/", // added root
@@ -25,6 +26,7 @@ export const ProviderRoutePaths = {
   chats: "/chats",
   specificChat: "/chats/:chatId",
   User: "/user",
+  Notifications: "/notifications",
   sender: "/sender/:senderId",
   ErrorPage: "*",
 };
@@ -79,6 +81,10 @@ export const ProviderRouter = createBrowserRouter([
   {
     path: ProviderRoutePaths.sender,
     Component: SenderDashboard,
+  },
+  {
+    path: ProviderRoutePaths.Notifications,
+    Component: Notifications,
   },
   {
     path: ProviderRoutePaths.User,

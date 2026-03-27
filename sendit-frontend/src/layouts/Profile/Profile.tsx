@@ -105,10 +105,10 @@ const Profile = () => {
                         {Object.entries(options1).map(([option, icon], index) => (
                             <div 
                                 key={option} 
-                                onClick={() => option.trim() === "Wallet" && navigate('/wallet')}
+                                onClick={() => navigate('/notifications')}
                                 className={`cursor-pointer hover:bg-gray-200 ${index > 0 && 'border-t-1 border-gray-200'} flex items-center gap-4 p-4 rounded-lg transition-colors w-full`}
                             >
-                                <div className="flex gap-2 justify-center items-center">
+                                <div onClick={() => navigate('/notifications')} className="flex gap-2 justify-center items-center">
                                     <div className="p-2 bg-white rounded-[50%]">
                                         <Icon icon={icon} width={24} className="text-black"/>
                                     </div>

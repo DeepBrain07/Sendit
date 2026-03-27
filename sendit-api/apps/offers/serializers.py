@@ -225,14 +225,28 @@ class ProposalListSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 class ProposalSerializer(serializers.ModelSerializer):
-    # we need to import it here to avoid circular imports
+    # These are declared fields - they MUST be in Meta.fields
     carrier_detail = serializers.SerializerMethodField(read_only=True)
     sender_detail = serializers.SerializerMethodField(read_only=True)
-    offer_detail = OfferListSerializer(source="offer",read_only=True)
+    offer_detail = OfferListSerializer(source="offer", read_only=True)
+    
+    # Explicitly define price to ensure it's writeable
+    price = serializers.DecimalField(max_digits=10, decimal_places=2, required=True)
 
     class Meta:
         model = Proposal
-        fields = ["id", "offer", "offer_detail", "carrier", "carrier_detail","sender_detail", "price", "message", "status"]
+        # Ensure 'offer_detail' is present in this list
+        fields = [
+            "id", 
+            "offer", 
+            "offer_detail", 
+            "carrier", 
+            "carrier_detail",
+            "sender_detail", 
+            "price", 
+            "message", 
+            "status"
+        ]
         read_only_fields = ["id", "carrier", "status"]
 
     def get_carrier_detail(self, obj) -> dict:

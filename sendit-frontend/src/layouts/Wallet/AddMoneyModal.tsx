@@ -84,7 +84,7 @@ const AddMoneyModal = ({ accountDetails, isAddMoneyModalOpen, setIsAddMoneyModal
         const paymentParameters = {
             merchant_code: "MX276479", // Sometimes expects merchantCode
             pay_item_id: "Default_Payable_MX276479", // Sometimes expects payItemID
-            txn_ref: `YS-${Date.now()}`,
+            txn_ref: `TX-${Date.now()}`,
             amount: offer * 100, // Kobo
             currency: "566",
             site_redirect_url: window.location.href,

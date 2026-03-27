@@ -7,25 +7,28 @@ class NotificationService:
 
     @staticmethod
     def _push_to_websocket(user_id, notification):
-        """Internal helper to send data to the user's socket group"""
+        user_id_str = str(user_id) # Force string
+        print(f"DEBUG: Attempting WebSocket push to group notify_{user_id_str}")
+        
         channel_layer = get_channel_layer()
-        # We serialize the notification so the frontend gets a clean JSON object
-        data = {
-            "id": str(notification.id) if hasattr(notification, 'id') else None,
-            "type": notification.type,
-            "title": notification.title,
-            "message": notification.message,
-            "created_at": notification.created_at.isoformat(),
+        
+        # Manually extract primitive data to avoid Serializer/UUID/DateTime issues
+        payload = {
+            "id": str(notification.id),
+            "title": str(notification.title),
+            "message": str(notification.message),
+            "type": str(notification.type),
+            "created_at": notification.created_at.isoformat() if notification.created_at else None
         }
         
         async_to_sync(channel_layer.group_send)(
-            f"notify_{user_id}",
+            f"notify_{user_id_str}",
             {
                 "type": "send_notification",
-                "content": data
+                "content": payload  # This is now 100% safe for Redis
             }
         )
-
+        
     @staticmethod
     def create(user, type, title, message, content_object=None):
         # 1. Save to DB

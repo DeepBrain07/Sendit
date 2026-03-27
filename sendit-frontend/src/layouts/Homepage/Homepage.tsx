@@ -157,10 +157,10 @@ const RecentActivitiesCard = ({ from, to, carrier, amount, name }: { from: strin
             <div className="flex gap-2 items-start justify-start">
                 {carrier ? <div className="p-1 rounded-[50%] text-primary bg-white"><Icon icon="mage:package-box-fill" width={26} /></div> : <div className="p-1 rounded-[50%] text-primary bg-white"><Icon icon="material-symbols:luggage-rounded" width={26} /></div>}
                 <div className="flex flex-col">
-                    <div className="flex items-center gap-2">
-                        <p className="!font-black ">{from}</p>
+                    <div className="flex items-center gap-1">
+                        <p className="!font-black !text-sm ">{from}</p>
                         <Icon icon="tabler:arrow-right" width={20} className='inline text-bodyText/80'/>
-                        <p className="!font-black ">{to}</p>
+                        <p className="!font-black !text-sm">{to}</p>
                     </div>
                     <p className="text-left !text-[12px]  !text-black/60">{carrier ? 'Carrier:' : 'Sender:'}: <span className="!text-black">{name}</span></p>
                     <div className="flex gap-1">

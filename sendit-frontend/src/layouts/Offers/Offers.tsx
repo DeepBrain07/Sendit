@@ -8,6 +8,8 @@ import Modal from '../../components/Modal';
 import GradientFrame from '../../components/GradientBackground';
 import EscrowLifecycle, { type LifecycleStep } from '../../components/EscrowLifecycle';
 import api from '../../api/axios';
+// 1. Import toast and Toaster
+import toast, { Toaster } from 'react-hot-toast';
 
 const Offers = () => {
   const navigate = useNavigate();
@@ -21,12 +23,11 @@ const Offers = () => {
       try {
         setLoading(true);
         const response = await api.get('/offers/');
-        // Adjusting for common DRF response structures
         const data = response.data.offers || response.data.results || response.data;
-        console.log("Fetched offers:", data);
         setOffers(data);
       } catch (error) {
         console.error("Error fetching offers:", error);
+        toast.error("Failed to load offers");
       } finally {
         setLoading(false);
       }
@@ -37,6 +38,9 @@ const Offers = () => {
 
   return (
     <DashboardLayout>
+      {/* 2. Add Toaster component here */}
+      <Toaster position="top-center" reverseOrder={false} />
+      
       <div className='bg-[#FBFBFBB2] p-4 flex flex-col gap-8'>
         <div className={` w-full flex items-center gap-4  `}>
           <button onClick={() => navigate('/home')} className="p-2 bg-white rounded-[50%] hover:bg-gray-100 transition-colors">
@@ -59,7 +63,6 @@ const Offers = () => {
         </div>
       </div>
 
-      {/* offers list */}
       <div className='p-4 flex flex-col gap-4'>
         {loading ? (
           <div className="flex justify-center py-10">
@@ -75,37 +78,69 @@ const Offers = () => {
               rating={offer.sender?.rating || 4.5}
               name={`${offer.sender?.first_name} ${offer.sender?.last_name}`}
               amount={offer.total_price}
-              date="Today" // You can format offer.created_at here if needed
+              date="Today"
               properties={offer.package_type ? [offer.package_type] : ["General"]}
               size={offer.size || "Medium"}
               img={offer.sender?.avatar || "https://randomuser.me/api/portraits/lego/1.jpg"}
               isUrgent={offer.is_urgent || false}
+              offerId={offer.id}
             />
           ))
-        )}
-        {!loading && offers.length === 0 && (
-          <p className="text-center text-gray-500 py-10">No offers available at the moment.</p>
         )}
       </div>
     </DashboardLayout>
   );
 };
 
-const OfferCard = ({ from, to, name, img, rating, verified, amount, date, properties, size, isUrgent }: { from: string, to: string, name: string, img?: string, rating?: number, verified?: boolean, amount: number, date: string, properties: string[], size?: 'Small' | 'Medium' | 'Large', isUrgent?: boolean }) => {
+const OfferCard = ({ from, to, name, offerId, img, rating, verified, amount, date, properties, size, isUrgent }: { from: string, to: string, name: string, offerId: string, img?: string, rating?: number, verified?: boolean, amount: number, date: string, properties: string[], size?: 'Small' | 'Medium' | 'Large', isUrgent?: boolean }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Calculate earnings (assuming 10% fee)
   const platformFee = amount * 0.1;
   const earnings = amount - platformFee;
+  const [bidAmount, setBidAmount] = useState<number>(amount);
+
+  const handleBid = async () => {
+    if (bidAmount <= 0) {
+      toast.error("Please enter a valid bid amount");
+      return;
+    }
+
+    // 3. Use toast.promise for a high-end feel
+    const bidPromise = api.post('/offers/proposals/', {
+      offer: offerId,
+      price: bidAmount
+    });
+
+    toast.promise(bidPromise, {
+      loading: 'Submitting your bid...',
+      success: 'Bid submitted successfully!',
+      error: (err) => err.response?.data?.error || 'Failed to submit bid',
+    }, {
+      style: {
+        borderRadius: '10px',
+        background: '#333',
+        color: '#fff',
+      },
+      success: {
+        duration: 4000,
+        icon: '✅',
+      },
+    });
+
+    try {
+      setIsSubmitting(true);
+      await bidPromise;
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Bid error:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const lifecycleData: LifecycleStep[] = [
-    {
-      id: 1,
-      title: "Carrier Accepted",
-      description: "Awaiting sender to fund escrow",
-      completed: true,
-      banner: "Sender must fund escrow before you do pickup. They've been notified",
-    },
+    { id: 1, title: "Carrier Accepted", description: "Awaiting sender to fund escrow", completed: true, banner: "Sender must fund escrow before you do pickup. They've been notified", },
     { id: 2, title: "Escrow Activated", description: "Funds held by Sendit x Interswitch", completed: false },
     { id: 3, title: "Picked Up Package", description: "In carrier's hands - money still held", completed: false },
     { id: 4, title: "On your way", description: "Carrier heading to destination", completed: false },
@@ -115,7 +150,7 @@ const OfferCard = ({ from, to, name, img, rating, verified, amount, date, proper
 
   return (
     <div className=" p-4 rounded-xl  bg-[#FBFBFBB2] border-1 border-bodyText/10 !text-black flex flex-col gap-2">
-      {/* Modal */}
+      {/* Modal - same as before */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <div className='flex flex-col gap-2'>
           <p>Sender</p>
@@ -210,10 +245,9 @@ const OfferCard = ({ from, to, name, img, rating, verified, amount, date, proper
       <div className='flex justify-between items-start'>
         <div className='flex flex-col'>
           <div className='flex gap-2 justify-start items-center'>
-            <p className="!text-lg !font-bold ">{from} </p>
-            <Icon icon="mdi:arrow-right" width={20} className="" />
-            <p className="!text-lg !font-bold ">{to}</p>
-            
+            <p className="!text-sm !font-bold ">{from} </p>
+            <Icon icon="mdi:arrow-right" width={16} className="" />
+            <p className="!text-sm !font-bold ">{to}</p>
           </div>
           <p className="!text-sm text-gray-500">{date}</p>
         </div>
@@ -239,27 +273,44 @@ const OfferCard = ({ from, to, name, img, rating, verified, amount, date, proper
               <p className='!text-xs mt-1'>Urgent</p>
           </div>}
       </div>
-      <div className='flex items-start gap-2 border-t-2 border-bodyText/30 border-dotted mt-6 pt-4'>
-        <div className='border-1 border-primary size-12 rounded-lg bg-gray-300 shrink-0 flex items-center justify-center text-white overflow-hidden'>
-          <img src={img} alt={name} className='w-full h-full object-cover shrink-0' />
-        </div>
-        <div className='flex flex-col'>
-          <p className='!text-sm !font-bold'>{name}</p>
-          <div className='flex items-center gap-1'>
-            <div className='flex jusify-center items-center gap-[1px] bg-gray-100 p-2 py-1 rounded-full'>
-              <Icon icon="mdi:star" width={14} className="text-black" />
-              <p className='!text-xs  !mt-[1.5px] !text-black '>{rating}</p>
-            </div>
-            {verified && (
+      <div className='flex  justify-between items-start gap-2 border-t-2 border-bodyText/30 border-dotted mt-6 pt-4'>
+        <div className='flex gap-2'>
+          <div className='border-1 border-primary size-12 rounded-lg bg-gray-300 shrink-0 flex items-center justify-center text-white overflow-hidden'>
+            <img src={img} alt={name} className='w-full h-full object-cover shrink-0' />
+          </div>
+          <div className='flex flex-col'>
+            <p className='!text-sm !font-bold'>{name}</p>
+            <div className='flex items-center gap-1'>
               <div className='flex jusify-center items-center gap-[1px] bg-gray-100 p-2 py-1 rounded-full'>
-                <Icon icon="codicon:verified-filled" width={16} className="text-primary" />
-                <p className='!text-xs !font-extrabold !text-gray-500'>Verified</p>
+                <Icon icon="mdi:star" width={14} className="text-black" />
+                <p className='!text-xs  !mt-[1.5px] !text-black '>{rating}</p>
               </div>
-            )}
+              {verified && (
+                <div className='flex jusify-center items-center gap-[1px] bg-gray-100 p-2 py-1 rounded-full'>
+                  <Icon icon="codicon:verified-filled" width={16} className="text-primary" />
+                </div>
+              )}
+            </div>
           </div>
         </div>
-        <div className='w-full items-center justify-end flex'>
-          <Button onClick={() => setIsModalOpen(true)} title='Accept' className="!px-4 !py-2 !w-fit" />
+        <div className='flex items-center gap-1'>
+            <div className='rounded-full max-w-[100px] p-1 bg-white  border-gray-300'>
+              <input 
+                type="number" 
+                value={bidAmount} 
+                onChange={(e) => setBidAmount(Number(e.target.value))} 
+                placeholder='amount' 
+                className='p-2 w-full h-full outline-none text-sm' 
+              />
+            </div>
+            <div className='items-center justify-end flex'>
+              <Button 
+                onClick={handleBid} 
+                title={isSubmitting ? '...' : 'Bid'} 
+                disabled={isSubmitting}
+                className="!px-4 !py-2 !w-fit" 
+              />
+            </div>
         </div>
       </div>
     </div>

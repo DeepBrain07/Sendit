@@ -57,7 +57,8 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS= [
     "apps.core",
     "apps.account",
-    "apps.offers",
+    # "apps.offers",
+    "apps.offers.apps.OffersConfig",
     "apps.wallets",
     "apps.escrow",
     "apps.payments",

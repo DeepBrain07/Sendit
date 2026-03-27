@@ -77,30 +77,30 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.user = self.scope.get("user", AnonymousUser())
         
-        # --- TESTING BYPASS ---
-        # Comment out the 'if' block below to allow Postman to connect without a token.
         if self.user.is_anonymous:
-            # For testing, let's join a generic test group instead of closing
             self.group_name = "notify_test_group"
         else:
-            self.group_name = f"notify_{self.user.id}"
+            # Ensure this is a string to match the UUID in the logs
+            self.group_name = f"notify_{str(self.user.id)}"
             
-        await self.channel_layer.group_add(
-            self.group_name,
-            self.channel_name
-        )
+        print(f"WS CONNECT: User {self.user} joined {self.group_name}", flush=True)
+
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
-    async def disconnect(self, close_code):
-        if hasattr(self, 'group_name'):
-            await self.channel_layer.group_discard(
-                self.group_name,
-                self.channel_name
-            )
+    # ... disconnect logic ...
 
     async def send_notification(self, event):
+        # 1. Get the data out of the 'content' key sent by the service
+        notification_data = event.get("content", {})
+        
+        print(f"WS DATA RECEIVED IN CONSUMER: {notification_data}", flush=True)
+
+        # 2. Send it to the frontend
         await self.send(text_data=json.dumps({
             'type': 'notification',
-            'message': event['message'],
-            'data': event.get('data', {})
+            'title': notification_data.get('title'),
+            'message': notification_data.get('message'),
+            'created_at': notification_data.get('created_at'),
+            'id': notification_data.get('id'),
         }))
