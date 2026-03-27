@@ -13,7 +13,7 @@ It enables affordable, secure, and trustworthy delivery by leveraging everyday t
 ---
 
 ## 💡 The Problem
-
+![A business woman whom is customer paid double because of lack of order](https://github.com/DeepBrain07/Sendit/blob/features/api/sendit-solution.png)
 - Informal delivery systems lack trust and accountability  
 - No protection when deliveries fail  
 - Pricing is inconsistent and sometimes exploitative  
