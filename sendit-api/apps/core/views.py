@@ -23,7 +23,7 @@ class MediaViewSet(ModelViewSet):
 
 class NotificationListView(ReadOnlyModelViewSet):
     # Fix 1: Provide a base queryset and lookup_field for schema generation
-    queryset = Notification.objects.all() 
+    queryset = Notification.objects.all()
     lookup_field = 'id'
     
     serializer_class = NotificationSerializer
