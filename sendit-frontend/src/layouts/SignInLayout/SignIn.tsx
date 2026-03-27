@@ -25,9 +25,10 @@ function SignIn() {
         // 2. The backend returns something like: 
         // { status: 'Success', data: { id: '...', profile: { is_new_user: true }, ... } }
       
-        const userData = response.data;
+        const userData = response.data.data;
         console.log("User Data from Backend:", userData);
         const isNewUser = userData.profile?.is_new_user;
+        console.log(response.data.data.profile)
 
         // 3. Save user data to localStorage
         // This includes the profile object so ProtectedRoutes can check it
@@ -38,7 +39,7 @@ function SignIn() {
          * If they are a new user (haven't completed VerifyLayout), send to verify.
          * Otherwise, send to the main app dashboard.
          */
-        if (isNewUser) {
+        if (isNewUser === true) {
           navigate('/onboarding');
         } else {
           navigate('/home'); // or wherever your main landing page is
