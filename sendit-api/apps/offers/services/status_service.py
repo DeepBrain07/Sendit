@@ -109,7 +109,8 @@ class OfferStatusService:
 
             # Mark escrow as ready for release
             try:
-                EscrowService.mark_release_ready(offer.escrow)
+                # EscrowService.mark_release_ready(offer.escrow)
+                EscrowService.release_funds(offer.escrow)
             except Exception as e:
                 # Log that escrow couldn't be updated
                 print(

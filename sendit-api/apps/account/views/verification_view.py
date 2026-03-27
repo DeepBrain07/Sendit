@@ -12,7 +12,6 @@ from apps.core.services.notification_service import NotificationService,Notifica
 @verification_doc
 class VerificationViewSet(viewsets.ModelViewSet):
     """
-    
         "This endpoint allows users to submit and manage identity verification requests.
         "**User capabilities:**
         "- Submit verification (with document + selfie)"
@@ -48,7 +47,6 @@ class VerificationViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=201)
         except Exception as e:
             return Response({"error":str(e)}, status=400)
-
 
     def perform_create(self, serializer):
         serializer.save(profile=self.request.user.profile)

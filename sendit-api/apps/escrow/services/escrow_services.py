@@ -98,19 +98,20 @@ class EscrowService:
 
     @classmethod
     @db_transaction.atomic
-    def release_funds(cls, escrow: Escrow, admin_user):
+    def release_funds(cls, escrow: Escrow):
         """
         Release escrow funds to carrier.
         Admin user is assigned to release the escrow.
         """
-        if escrow.status != Escrow.Status.RELEASE_READY:
-            raise ValueError("Escrow not ready for release")
+        if escrow.status != Escrow.Status.LOCKED:
+            raise ValueError("Escrow must be locked first")
         
-        if not admin_user.is_staff:
-            raise ValueError("Admin user required to release escrow and fund carrier wallet")
+        # if escrow.status != Escrow.Status.RELEASE_READY:
+        #     raise ValueError("Escrow not ready for release")
+        
+        # if not admin_user.is_staff:
+        #     raise ValueError("Admin user required to release escrow and fund carrier wallet")
 
-        "pick ~!"
-         
         carrier_wallet = escrow.offer.carrier.wallet
         carrier_wallet.balance += escrow.amount
         print(f"Carrier wallet balance before release: {carrier_wallet.balance}")
@@ -123,12 +124,12 @@ class EscrowService:
             note=f"Released escrow {escrow.id}"
         )
 
-        escrow.released_by = admin_user
+        escrow.released_by = escrow.user
         escrow.status = Escrow.Status.RELEASED
         escrow.is_released = True
         escrow.released_at = timezone.now()
         escrow.save(update_fields=["status", "is_released", "released_at","released_by"])
-       
+    
         NotificationService.create(
             user=escrow.offer.carrier,
             type=Notification.Type.ESCROW_RELEASED,

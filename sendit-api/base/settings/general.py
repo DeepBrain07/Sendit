@@ -27,6 +27,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
+
+# SECURITY WARNING: encryption key for sensitive data
+import base64
+_default_key = base64.urlsafe_b64encode(SECRET_KEY[:32].ljust(32).encode('ascii')) if SECRET_KEY else b'7VlW69-69X88v5z56z56z56z56z56z56z56z56z56z0='
+ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY', _default_key)
+if isinstance(ENCRYPTION_KEY, str):
+    ENCRYPTION_KEY = ENCRYPTION_KEY.encode('ascii')
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 

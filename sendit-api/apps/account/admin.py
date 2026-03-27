@@ -1,3 +1,5 @@
+from cryptography.fernet import Fernet
+from django.conf import settings
 from .models import Verification
 from django.contrib import admin
 from .models import CustomUser, VerifyOTP,Profile
@@ -39,8 +41,20 @@ class ProfileAdmin(admin.ModelAdmin):
 
 @admin.register(Verification)
 class VerificationAdmin(admin.ModelAdmin):
-    list_display = ['id', 'profile', 'verification_type', 'is_verified']
+    list_display = ['id', 'profile', 'verification_type', 'is_verified', 'decrypted_id_number_display']
     list_editable = ('is_verified',)
+    readonly_fields = ('decrypted_id_number_display',)
+
+    def decrypted_id_number_display(self, obj):
+        if not obj.id_number:
+            return "-"
+        try:
+            f = Fernet(settings.ENCRYPTION_KEY)
+            return f.decrypt(obj.id_number.encode()).decode()
+        except Exception:
+            return "Unable to decrypt (wrong key or plain)"
+    
+    decrypted_id_number_display.short_description = "ID Number (Decrypted)"
 
     def save_model(self, request, obj, form, change):
         # If verification is approved
