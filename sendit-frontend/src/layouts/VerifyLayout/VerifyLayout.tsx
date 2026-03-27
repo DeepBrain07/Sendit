@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import '../SignInLayout/style.css'
 import { PhoneInput } from './PhoneInput';
 import PhoneVerification from './PhoneVerification';
@@ -9,7 +8,6 @@ import { Congratulations } from './congratulations';
 import api from '../../api/axios';
 
 const VerifyLayout = () => {
-  const navigate = useNavigate();
   const [step, setStep] = useState<number>(1);
   const [phone, setPhone] = useState<string>("");
   const [identificationData, setIdentificationData] = useState<any>(null);

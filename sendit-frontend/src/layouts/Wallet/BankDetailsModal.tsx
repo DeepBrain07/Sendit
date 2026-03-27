@@ -5,16 +5,21 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 interface BankDetailsModalProps {
     isModalOpen: boolean;
     setIsModalOpen: (open: boolean) => void;
+    accountDetails: {
+        bank: string;
+        account_number: string;
+        account_name: string;
+    };
 }
 
-const BankDetailsModal = ({ isModalOpen, setIsModalOpen }: BankDetailsModalProps) => {
+const BankDetailsModal = ({ accountDetails, isModalOpen, setIsModalOpen }: BankDetailsModalProps) => {
     const [showCopyToast, setShowCopyToast] = useState(false);
     
     // Account Information
     const accountInfo = {
-        bankName: "Moniepoint Ltd",
-        accountNumber: "6239507606",
-        accountName: "Sendit/Mercy.p"
+        bankName: accountDetails.bank || "null",
+        accountNumber: accountDetails.account_number || "null",
+        accountName: accountDetails.account_name || "null"
     };
 
     const handleCopy = (text: string) => {

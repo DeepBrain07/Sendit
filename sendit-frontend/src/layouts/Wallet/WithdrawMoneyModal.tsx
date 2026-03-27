@@ -1,11 +1,9 @@
 import Modal from "../../components/Modal"
 import { Button } from "../../components/Button"
-import { useEffect, useState } from "react";
+import {useState } from "react";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import Select from "react-select";
 
-// A common list of Nigerian banks. In a production app, you might fetch 
-// this from Paystack API, but a static list is faster for UX.
 const NIGERIAN_BANKS = [
     { value: "044", label: "Access Bank" },
     { value: "050", label: "Ecobank Nigeria" },
@@ -33,9 +31,10 @@ const NIGERIAN_BANKS = [
 interface WithdrawMoneyModalProps {
     isWithdrawMoneyModalOpen: boolean;
     setIsWithdrawMoneyModalOpen: (open: boolean) => void;
+    walletBalance: number;
 }
 
-const WithdrawMoneyModal = ({ isWithdrawMoneyModalOpen, setIsWithdrawMoneyModalOpen }: WithdrawMoneyModalProps) => {
+const WithdrawMoneyModal = ({ walletBalance, isWithdrawMoneyModalOpen, setIsWithdrawMoneyModalOpen }: WithdrawMoneyModalProps) => {
     const [isSuccess, setIsSuccess] = useState(false);
     const [offer, setOffer] = useState<number>(2500);
     const presets = [2000, 4000, 6000, 8000, 10000];
@@ -49,20 +48,20 @@ const WithdrawMoneyModal = ({ isWithdrawMoneyModalOpen, setIsWithdrawMoneyModalO
     };
 
     const updateOffer = (val: number) => {
-        const newVal = Math.max(0, val);
+        // Prevents negative values and caps at the wallet balance
+        const newVal = Math.min(walletBalance, Math.max(0, val));
         setOffer(newVal);
     };
 
-    // Custom styles for react-select to match your Tailwind theme
     const customSelectStyles = {
         control: (base: any) => ({
             ...base,
             borderRadius: '0.5rem',
             padding: '2px',
-            borderColor: '#D1D5DB', // gray-300
+            borderColor: '#D1D5DB',
             boxShadow: 'none',
             '&:hover': {
-                borderColor: '#335CF4', // primary
+                borderColor: '#335CF4',
             }
         }),
     };
@@ -85,11 +84,14 @@ const WithdrawMoneyModal = ({ isWithdrawMoneyModalOpen, setIsWithdrawMoneyModalO
                                                     type="number"
                                                     value={offer === 0 ? "" : offer}
                                                     onChange={(e) => updateOffer(Number(e.target.value))}
-                                                    className="!text-4xl !font-black bg-transparent border-none outline-none max-w-[150px] text-center "
+                                                    className="!text-4xl !font-black bg-transparent border-none outline-none max-w-[200px] text-center "
                                                     placeholder="0"
                                                 />
                                             </h1>
                                         </div>
+                                        {offer > walletBalance && (
+                                            <p className="text-red-500 text-xs font-bold mt-2">Insufficient balance (Max: ₦{walletBalance.toLocaleString()})</p>
+                                        )}
                                     </div>
                                 </div>
 
@@ -97,8 +99,9 @@ const WithdrawMoneyModal = ({ isWithdrawMoneyModalOpen, setIsWithdrawMoneyModalO
                                     {presets.map((price) => (
                                         <button
                                             key={price}
+                                            disabled={price > walletBalance}
                                             onClick={() => updateOffer(price)}
-                                            className={`px-2 py-2 !text-xs rounded-xl font-bold transition-all ${offer === price ? "bg-primary text-white" : "bg-gray-50 hover:bg-gray-100"}`}
+                                            className={`px-2 py-2 !text-xs rounded-xl font-bold transition-all ${offer === price ? "bg-primary text-white" : price > walletBalance ? "bg-gray-100 text-gray-300 cursor-not-allowed" : "bg-gray-50 hover:bg-gray-100"}`}
                                         >
                                             ₦{price.toLocaleString()}
                                         </button>
@@ -140,7 +143,7 @@ const WithdrawMoneyModal = ({ isWithdrawMoneyModalOpen, setIsWithdrawMoneyModalO
                             
                             <Button 
                                 className="mt-4" 
-                                disabled={offer <= 0 || accountNumber === "" || receiverName === "" || !selectedBank} 
+                                disabled={offer <= 0 || offer > walletBalance || accountNumber === "" || receiverName === "" || !selectedBank} 
                                 title="Withdraw Money" 
                                 onClick={() => setIsSuccess(true)} 
                             />

@@ -4,6 +4,20 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 
 
+class ChatRoom(models.Model):
+    # Link this to an Offer ID so the chat is contextual
+    offer = models.OneToOneField("offers.Offer", on_delete=models.CASCADE, related_name="chat")
+    participants = models.ManyToManyField(settings.AUTH_USER_MODEL)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+class Message(models.Model):
+    room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name="messages")
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    text = models.TextField()
+    is_read = models.BooleanField(default=False)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
 class Media(models.Model):
     MEDIA_TYPE_CHOICES = (
         ('image', 'Image'),
@@ -64,7 +78,7 @@ class Notification(models.Model):
     is_read = models.BooleanField(default=False)
 
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-    object_id = models.UUIDField()
+    object_id = models.CharField(max_length=255)
     content_object = GenericForeignKey("content_type", "object_id")
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -79,6 +93,18 @@ class Notification(models.Model):
     def mark_as_read(self):
         self.is_read = True
         self.save(update_fields=["is_read"])
+
+    def to_json(self):
+        return {
+            "id": str(self.id) if hasattr(self, 'id') else None,
+            "type": self.type,
+            "title": self.title,
+            "message": self.message,
+            "is_read": self.is_read,
+            "created_at": self.created_at.isoformat(),
+            # You can add the object_id so the frontend knows where to redirect
+            "target_id": str(self.object_id) 
+        }
 
     def __str__(self):
         return f"{self.user} - {self.type}"

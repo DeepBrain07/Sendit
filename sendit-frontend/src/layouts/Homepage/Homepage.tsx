@@ -1,7 +1,7 @@
 import DashboardLayout from "../DashboardLayout/DashboardLayout"
 import { profileImage } from "../../assets/images";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 
@@ -21,31 +21,39 @@ const Homepage = () => {
     const places = ["Lagos", "Abuja", "Port Harcourt", "Kano", "Ibadan", "Enugu"];
 
     useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const response = await api.get("/users/me/");
-                const freshData = response.data.data;
-                setUserData(freshData);
-                localStorage.setItem('user', JSON.stringify(freshData));
-            } catch (error) {
-                console.error("Failed to refresh user data:", error);
-            }
-        };
+    const fetchUserData = async () => {
+        try {
+            const response = await api.get("/users/me/");
+            const freshData = response.data.data;
 
-        const fetchOffers = async () => {
-            try {
-                const response = await api.get("/offers/");
-                console.log(response.data);
-                // Adjust based on your API response structure (usually response.data.results or response.data.data)
-                setOffers(response.data.offers || response.data.results || []);
-            } catch (error) {
-                console.error("Failed to fetch offers:", error);
-            }
-        };
+            // 1. Get the existing data first
+            const existingUser = JSON.parse(localStorage.getItem('user') || '{}');
+            console.log("Existing User Data from localStorage:", existingUser);
+            console.log("Fresh User Data from API:", freshData);
 
-        fetchUserData();
-        fetchOffers();
-    }, []);
+            // 2. Merge them: freshData will update existing keys, 
+            // but won't delete keys that are only in existingUser
+            const mergedData = { ...existingUser, ...freshData };
+
+            setUserData(mergedData);
+            localStorage.setItem('user', JSON.stringify(mergedData));
+        } catch (error) {
+            console.error("Failed to refresh user data:", error);
+        }
+    };
+
+    const fetchOffers = async () => {
+        try {
+            const response = await api.get("/offers/");
+            setOffers(response.data.offers || response.data.results || []);
+        } catch (error) {
+            console.error("Failed to fetch offers:", error);
+        }
+    };
+
+    fetchUserData();
+    fetchOffers();
+}, []);
 
     console.log("Offers:", offers);
     const avatarUrl = userData?.avatar?.file_url || userData?.profile?.avatar?.file || profileImage;
@@ -149,10 +157,10 @@ const RecentActivitiesCard = ({ from, to, carrier, amount, name }: { from: strin
             <div className="flex gap-2 items-start justify-start">
                 {carrier ? <div className="p-1 rounded-[50%] text-primary bg-white"><Icon icon="mage:package-box-fill" width={26} /></div> : <div className="p-1 rounded-[50%] text-primary bg-white"><Icon icon="material-symbols:luggage-rounded" width={26} /></div>}
                 <div className="flex flex-col">
-                    <div className="flex items-center gap-2">
-                        <p className="!font-black ">{from}</p>
+                    <div className="flex items-center gap-1">
+                        <p className="!font-black !text-sm ">{from}</p>
                         <Icon icon="tabler:arrow-right" width={20} className='inline text-bodyText/80'/>
-                        <p className="!font-black ">{to}</p>
+                        <p className="!font-black !text-sm">{to}</p>
                     </div>
                     <p className="text-left !text-[12px]  !text-black/60">{carrier ? 'Carrier:' : 'Sender:'}: <span className="!text-black">{name}</span></p>
                     <div className="flex gap-1">

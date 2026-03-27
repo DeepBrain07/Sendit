@@ -193,25 +193,16 @@ class OfferUpdateSerializer(serializers.ModelSerializer):
         ]
 
     def update(self, instance, validated_data):
-        print(f"\n--- DEBUG: Starting Update for {instance.code} ---")
-        print(f"Initial Status: {instance.status}")
-        
         pickup_location = validated_data.pop("pickup_location", None)
         delivery_location = validated_data.pop("delivery_location", None)
         
         if pickup_location:
-            print(f"Creating Pickup Location: {pickup_location}")
             instance.pickup_location = Location.objects.create(**pickup_location)
         if delivery_location:
-            print(f"Creating Delivery Location: {delivery_location}")
             instance.delivery_location = Location.objects.create(**delivery_location)
         
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-            
-        # Force the status to posted
-        instance.status = "posted"
-        instance.current_step = "posted"
         
         instance.save()
         return instance
@@ -234,14 +225,28 @@ class ProposalListSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 class ProposalSerializer(serializers.ModelSerializer):
-    # we need to import it here to avoid circular imports
+    # These are declared fields - they MUST be in Meta.fields
     carrier_detail = serializers.SerializerMethodField(read_only=True)
     sender_detail = serializers.SerializerMethodField(read_only=True)
-    offer_detail = OfferListSerializer(source="offer",read_only=True)
+    offer_detail = OfferListSerializer(source="offer", read_only=True)
+    
+    # Explicitly define price to ensure it's writeable
+    price = serializers.DecimalField(max_digits=10, decimal_places=2, required=True)
 
     class Meta:
         model = Proposal
-        fields = ["id", "offer", "offer_detail", "carrier", "carrier_detail","sender_detail", "price", "message", "status"]
+        # Ensure 'offer_detail' is present in this list
+        fields = [
+            "id", 
+            "offer", 
+            "offer_detail", 
+            "carrier", 
+            "carrier_detail",
+            "sender_detail", 
+            "price", 
+            "message", 
+            "status"
+        ]
         read_only_fields = ["id", "carrier", "status"]
 
     def get_carrier_detail(self, obj) -> dict:
@@ -281,5 +286,4 @@ class ProposalStatusSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         # Additional validation can be added here if needed
         return attrs
-
 

@@ -7,3 +7,4 @@ export { default as bgGradient } from "./gradientBackground.svg";
 export { default as carrierLogo } from "./CarrierCardLogo.svg";
 export { default as senderLogo } from "./SenderCardLogo.svg";
 export { default as profileImage } from "./profileImage.jpg";
+export { default as escrowImage } from "./escrow.svg";
