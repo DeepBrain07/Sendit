@@ -27,7 +27,7 @@ class VerifyOTPAdmin(admin.ModelAdmin):
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'email', 'full_name', 'gender','age')
+    list_display = ('user', 'email', "type", 'full_name', 'gender','age')
     search_fields = ('first_name','last_name')
 
     def age(self, instance):

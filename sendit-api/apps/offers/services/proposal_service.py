@@ -90,7 +90,8 @@ class ProposalService:
             offer.save()
 
             # Create escrow AFTER state is consistent
-            EscrowService.create_escrow_for_offer(offer)
+            price = getattr(proposal, "price", 0) if proposal else 0
+            EscrowService.create_escrow_for_offer(offer,amount=price)
 
         OfferService.handle_proposal_accepted(proposal)
 

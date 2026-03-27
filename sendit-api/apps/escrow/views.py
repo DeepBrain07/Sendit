@@ -5,7 +5,7 @@ from .models import Escrow
 from .serializers import EscrowSerializer
 from .services.escrow_services import EscrowService 
 from rest_framework.permissions import IsAuthenticated
-from .permissions import IsOfferOrProposalOwnerOrAdmin
+from .permissions import IsOfferOwnerOrIsAdmin
 from .serializers import EscrowSerializer
 from .documentation.escrow.schemas import  escrow_doc
 
@@ -25,18 +25,19 @@ class EscrowViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = EscrowSerializer
     permission_classes = [IsAuthenticated] 
 
-    @decorators.action(detail=True, permission_classes=[IsOfferOrProposalOwnerOrAdmin], methods=['post'])
+    @decorators.action(detail=True, permission_classes=[IsOfferOwnerOrIsAdmin], methods=['post'])
     def fund(self, request, pk=None):
         """
         Fund the escrow.
         """
         # Get the escrow instance
         escrow = self.get_object()
+        print(f"offer owner:{escrow.offer.sender}")
         # Call your specific service method
         escrow= EscrowService.fund_escrow(escrow)
         return Response({"message": "Escrow funded successfully", "data":EscrowSerializer(escrow).data }, status=status.HTTP_200_OK)
 
-    @decorators.action(detail=True, permission_classes=[IsAdminUser], methods=['post'])
+    @decorators.action(detail=True, permission_classes=[IsOfferOwnerOrIsAdmin], methods=['post'])
     def release(self, request, pk=None):
         escrow = self.get_object()
         # Pass the admin user and any extra data (like partial release amount)

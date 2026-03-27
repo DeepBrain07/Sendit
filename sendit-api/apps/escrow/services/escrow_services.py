@@ -98,7 +98,7 @@ class EscrowService:
 
     @classmethod
     @db_transaction.atomic
-    def release_funds(cls, escrow: Escrow):
+    def release_funds(cls, escrow: Escrow,user):
         """
         Release escrow funds to carrier.
         Admin user is assigned to release the escrow.
@@ -124,7 +124,7 @@ class EscrowService:
             note=f"Released escrow {escrow.id}"
         )
 
-        escrow.released_by = escrow.user
+        escrow.released_by = user
         escrow.status = Escrow.Status.RELEASED
         escrow.is_released = True
         escrow.released_at = timezone.now()
