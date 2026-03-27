@@ -82,8 +82,9 @@ class OfferStatusService:
 
     @staticmethod
     def _start_transit(offer, user):
-        "sender can tell the offer is on trabsit"
-        if offer.sender != user or offer.proposal.carrier != user:
+        "sender can tell the offer is on transit"
+        if offer.sender.email != user.email and offer.carrier != user.email:
+            print(f"offer in transit:{offer.sender, offer.carrier, user}")
             raise ValidationError("Not your delivery")
 
         if offer.status != Offer.Status.ACCEPTED:
@@ -97,7 +98,7 @@ class OfferStatusService:
 
     @staticmethod
     def _deliver(offer, user):
-        if offer.sender != user or offer.proposal.carrier != user:
+        if offer.sender.email != user.email:
             raise ValidationError("Not your delivery")
 
         if offer.status != Offer.Status.IN_TRANSIT:
@@ -109,7 +110,8 @@ class OfferStatusService:
 
             # Mark escrow as ready for release
             try:
-                EscrowService.mark_release_ready(offer.escrow)
+                # EscrowService.mark_release_ready(offer.escrow)
+                EscrowService.release_funds(offer.escrow,user)
             except Exception as e:
                 # Log that escrow couldn't be updated
                 print(

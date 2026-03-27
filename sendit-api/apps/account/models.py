@@ -1,4 +1,5 @@
 from uuid import uuid4
+from cryptography.fernet import Fernet
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.contrib.auth.models import AbstractUser
@@ -187,7 +188,7 @@ class Verification(models.Model):
         'Profile', on_delete=models.CASCADE, related_name='verifications'
     )
     verification_type = models.CharField(max_length=50, choices=VERIFICATION_TYPES)
-    id_number = models.CharField(max_length=100, blank=True, null=True)
+    id_number = models.CharField(max_length=500, blank=True, null=True) # Stored encrypted
     verified_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True, blank=True,
@@ -210,23 +211,34 @@ class Verification(models.Model):
 
     def clean(self):
         """Validation logic for different ID types."""
-        # REMOVE OR COMMENT OUT THIS LINE:
-        # if self.verification_type == 'nin' and len(self.id_number) != 11:
-        #     raise ValidationError("NIN must be exactly 11 digits")
+        # We need to decrypt for validation if it's already encrypted (e.g. during a re-save)
+        id_val = self.id_number
+        if id_val and id_val.startswith('gAAAA'):
+            try:
+                f = Fernet(settings.ENCRYPTION_KEY)
+                id_val = f.decrypt(id_val.encode()).decode()
+            except Exception:
+                pass # Keep as is if decryption fails
         
         # If you still want to ensure the field isn't empty:
-        if not self.id_number:
+        if not id_val:
             raise ValidationError("ID number is required")
 
-        if self.verification_type == 'passport' and not self.id_number.isalnum():
+        if self.verification_type == 'passport' and not id_val.isalnum():
             raise ValidationError("Passport number must be alphanumeric")
             
         # Optional: Keep a loose check just to prevent keyboard smashes
-        if self.verification_type == 'voter_card' and len(self.id_number) < 5:
+        if self.verification_type == 'voter_card' and len(id_val) < 5:
             raise ValidationError("Please enter a valid Voter card number")
 
     def save(self, *args, **kwargs):
         self.full_clean() # This triggers the clean() method above
+        
+        # Encrypt the ID number if it's not already encrypted
+        if self.id_number and not self.id_number.startswith('gAAAA'):
+            f = Fernet(settings.ENCRYPTION_KEY)
+            self.id_number = f.encrypt(self.id_number.encode()).decode()
+
         super().save(*args, **kwargs)
 
     def __str__(self):

@@ -385,7 +385,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
             proposal = ProposalService.create_proposal(
                 offer=offer,
                 carrier=request.user,
-                price=serializer.validated_data["price"]
+                price=serializer.validated_data.get("price")
             )
             return Response(ProposalListSerializer(proposal).data, status=status.HTTP_201_CREATED)
         except ValidationError as e:

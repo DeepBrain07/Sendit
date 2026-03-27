@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from cryptography.fernet import Fernet
+from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -159,7 +161,8 @@ class VerificationSerializer(serializers.ModelSerializer):
     documents = serializers.SerializerMethodField(read_only=True)
     selfie_image = serializers.SerializerMethodField(read_only=True)
     verification_id = serializers.SerializerMethodField(read_only=True)
-    
+    profile = UserSerializer(read_only=True)
+
     class Meta:
         model = Verification
         fields = [
@@ -168,6 +171,26 @@ class VerificationSerializer(serializers.ModelSerializer):
             'is_verified', 'note', 'verified_by', 'verified_at'
         ]
         read_only_fields = ['is_verified', 'note', 'verified_by', 'verified_at', 'profile']
+
+    def to_representation(self, instance):
+        """Decrypt the ID number for owner or admin."""
+        ret = super().to_representation(instance)
+        user = self.context.get('request').user if self.context.get('request') else None
+        
+        if user and instance.id_number:
+            # Check if user is staff or the owner of this verification
+            if user.is_staff or (hasattr(user, 'profile') and user.profile == instance.profile):
+                try:
+                    f = Fernet(settings.ENCRYPTION_KEY)
+                    ret['id_number'] = f.decrypt(instance.id_number.encode()).decode()
+                except Exception:
+                    # If decryption fails (e.g. data already plain or wrong key), 
+                    # keep original or return as is
+                    pass
+            else:
+                # Mask for anyone else (though queryset should already restrict)
+                ret['id_number'] = "********"
+        return ret
 
     @extend_schema_field(MediaSerializer(many=True))
     def get_documents(self, obj):
