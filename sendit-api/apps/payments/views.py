@@ -12,8 +12,8 @@ from apps.wallets.services.wallet_services import WalletService
 from .services.payment_service import PaymentService
 from apps.payments.serializers import WebFundingPayloadSerializer
 from .utils import verify_signature
-from .documentation.payments.schemas import web_funding_create_payload_doc
-
+from .documentation.payments.schemas import web_funding_create_payload_doc, web_funding_upload_payload_doc
+from .serializers import TransactionSerializer
 logger = logging.getLogger(__name__)
 
 
@@ -114,6 +114,55 @@ class WebFundingPayloadView(APIView):
             return Response({
                 "message": "Funding initiated",
                 "form_payload": payload,
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@web_funding_upload_payload_doc
+class WebFundingUploadPayloadView(APIView):
+    """
+    Handles wallet funding update through web:
+    - Updates transaction
+    - Returns success message
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    # serializer_class = WebFundingPayloadSerializer
+
+    def post(self, request):
+        """
+        Provide details user can use to update payment (inline form) 
+        and transaction status SUCCESS
+        """
+        data = request.data
+        print(data)
+        amount = data.get("amount") or data.get("Amount")
+        user = request.user
+        txn_ref = data.get("txnRef") or data.get("TxnRef") or data.get("MerchantReference")
+        response_code = data.get("resp") or data.get("Resp") or data.get("ResponseCode")
+
+        if response_code not in ["200","00","201"]:
+            return Response({"error": "Transaction not successful"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not txn_ref or not amount:
+            return Response({"error": "Invalid payload txnRef and amount missing"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        wallet = getattr(user, "wallet", None)
+        if not wallet:
+            wallet = WalletService.create_wallet_account(user)
+
+        try:
+            transaction = PaymentService.update_funding_payload(
+                user=request.user,
+                amount=float(amount),
+                txn_ref=txn_ref,
+                data=data
+            )
+
+            return Response({
+                "message": "Funding successfully",
+                "transaction_data": TransactionSerializer(transaction).data,
             }, status=status.HTTP_200_OK)
 
         except Exception as e:

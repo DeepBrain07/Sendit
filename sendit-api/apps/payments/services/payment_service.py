@@ -2,9 +2,10 @@ from django.conf import settings
 from django.core.exceptions import PermissionDenied
 import requests
 import base64
+from decimal import Decimal
 from apps.payments.models import Transaction
-from apps.core.services.notification_service import NotificationService
-# from apps.wallets.services.wallet_services import WalletService
+from apps.core.services.notification_service import NotificationService,Notification
+from .webhook import PaymentVerifyWebhookService
 import uuid
 
 
@@ -77,6 +78,49 @@ class PaymentService:
         }
 
         return transaction, payload
+  
+    @staticmethod
+    def update_funding_payload(user, amount, txn_ref, data):
+        """
+        update wallet funding via response from payment gateway (Interswitch).
+        - Creates a transaction with SUCCESS status.
+        - Returns success message.
+        """
+        channel = "WEB"
+
+        # 1️⃣ Check user verification
+        if not getattr(user.profile, "is_verified", False):
+            raise PermissionDenied("Only verified users can fund wallet")
+
+        # 2️⃣ Ensure wallet exists
+        wallet = getattr(user, "wallet", None)
+        if not wallet:
+            # wallet = WalletService.create_wallet_account(user)
+            raise ValueError("No wallet linked to user account")
+
+        # 3️⃣ Generate unique transaction reference
+        # tx_ref = f"Wallet_{uuid.uuid4().hex[:16]}_{int(amount*100)}"
+
+        # 4️⃣ Create transaction record
+        transaction = Transaction.objects.create(
+            wallet=wallet,
+            tx_ref=txn_ref,
+            amount=Decimal(amount / 100),
+            status=Transaction.Status.SUCCESS
+        )
+
+        PaymentVerifyWebhookService.finalize_payment_success(transaction=transaction, channel=channel,payload=data)
+         # ✅ notify user outside atomic block to avoid issues if notification fails
+        NotificationService.create(
+            user=wallet.user,
+            type=Notification.Type.PAYMENT_SUCCESS,
+            title="Payment Successful",
+            message=f"Your payment of {transaction.amount} has been received via {channel}.",
+            content_object=transaction
+        )
+
+
+        return transaction
 
     @staticmethod
     def notify_payment_status(transaction):

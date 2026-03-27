@@ -3,6 +3,15 @@ from .models import Wallet
 from .services.wallet_services import WalletService
 from django.urls import reverse
 
+class WalletSerializer(serializers.ModelSerializer):
+     class Meta:
+        model = Wallet
+        fields = [
+            "id",
+            "balance",
+            
+        ]
+
 class WalletDashboardSerializer(serializers.ModelSerializer):
     breakdown = serializers.SerializerMethodField()
     virtual_account = serializers.SerializerMethodField()
@@ -38,9 +47,9 @@ class WalletDashboardSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
 
         return {
-            "fund_wallet": request.build_absolute_uri("/api/wallet/fund/"),
-            "view_history": request.build_absolute_uri("/api/wallet/history/"),
-            "withdraw": request.build_absolute_uri("/api/wallet/withdraw/"),
+            "fund_wallet": "/wallet/fund/",
+            "view_history": "/wallet/history/",
+            "withdraw": "/wallet/withdraw/",
         }
 
 
