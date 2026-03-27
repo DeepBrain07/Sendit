@@ -24,9 +24,8 @@ function SignIn() {
 
         // 2. The backend returns something like: 
         // { status: 'Success', data: { id: '...', profile: { is_new_user: true }, ... } }
-        console.log('Login Successful:', response.data);
-
-        const userData = response.data.data;
+      
+        const userData = response.data;
         console.log("User Data from Backend:", userData);
         const isNewUser = userData.profile?.is_new_user;
 

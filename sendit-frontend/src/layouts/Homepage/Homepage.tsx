@@ -21,31 +21,39 @@ const Homepage = () => {
     const places = ["Lagos", "Abuja", "Port Harcourt", "Kano", "Ibadan", "Enugu"];
 
     useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const response = await api.get("/users/me/");
-                const freshData = response.data.data;
-                setUserData(freshData);
-                localStorage.setItem('user', JSON.stringify(freshData));
-            } catch (error) {
-                console.error("Failed to refresh user data:", error);
-            }
-        };
+    const fetchUserData = async () => {
+        try {
+            const response = await api.get("/users/me/");
+            const freshData = response.data.data;
 
-        const fetchOffers = async () => {
-            try {
-                const response = await api.get("/offers/");
-                console.log(response.data);
-                // Adjust based on your API response structure (usually response.data.results or response.data.data)
-                setOffers(response.data.offers || response.data.results || []);
-            } catch (error) {
-                console.error("Failed to fetch offers:", error);
-            }
-        };
+            // 1. Get the existing data first
+            const existingUser = JSON.parse(localStorage.getItem('user') || '{}');
+            console.log("Existing User Data from localStorage:", existingUser);
+            console.log("Fresh User Data from API:", freshData);
 
-        fetchUserData();
-        fetchOffers();
-    }, []);
+            // 2. Merge them: freshData will update existing keys, 
+            // but won't delete keys that are only in existingUser
+            const mergedData = { ...existingUser, ...freshData };
+
+            setUserData(mergedData);
+            localStorage.setItem('user', JSON.stringify(mergedData));
+        } catch (error) {
+            console.error("Failed to refresh user data:", error);
+        }
+    };
+
+    const fetchOffers = async () => {
+        try {
+            const response = await api.get("/offers/");
+            setOffers(response.data.offers || response.data.results || []);
+        } catch (error) {
+            console.error("Failed to fetch offers:", error);
+        }
+    };
+
+    fetchUserData();
+    fetchOffers();
+}, []);
 
     console.log("Offers:", offers);
     const avatarUrl = userData?.avatar?.file_url || userData?.profile?.avatar?.file || profileImage;

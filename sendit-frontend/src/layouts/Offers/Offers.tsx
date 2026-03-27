@@ -79,6 +79,7 @@ const Offers = () => {
               properties={offer.package_type ? [offer.package_type] : ["General"]}
               size={offer.size || "Medium"}
               img={offer.sender?.avatar || "https://randomuser.me/api/portraits/lego/1.jpg"}
+              isUrgent={offer.is_urgent || false}
             />
           ))
         )}
@@ -90,7 +91,7 @@ const Offers = () => {
   );
 };
 
-const OfferCard = ({ from, to, name, img, rating, verified, amount, date, properties, size }: { from: string, to: string, name: string, img?: string, rating?: number, verified?: boolean, amount: number, date: string, properties: string[], size?: 'Small' | 'Medium' | 'Large' }) => {
+const OfferCard = ({ from, to, name, img, rating, verified, amount, date, properties, size, isUrgent }: { from: string, to: string, name: string, img?: string, rating?: number, verified?: boolean, amount: number, date: string, properties: string[], size?: 'Small' | 'Medium' | 'Large', isUrgent?: boolean }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   // Calculate earnings (assuming 10% fee)
@@ -212,6 +213,7 @@ const OfferCard = ({ from, to, name, img, rating, verified, amount, date, proper
             <p className="!text-lg !font-bold ">{from} </p>
             <Icon icon="mdi:arrow-right" width={20} className="" />
             <p className="!text-lg !font-bold ">{to}</p>
+            
           </div>
           <p className="!text-sm text-gray-500">{date}</p>
         </div>
@@ -220,16 +222,22 @@ const OfferCard = ({ from, to, name, img, rating, verified, amount, date, proper
           <p className="!text-sm text-gray-500">You Earn</p>
         </div>
       </div>
-      <div className='flex gap-2'>
-        <div className="flex items-center justify-center gap-1 !text-xs text-primary bg-primary/10 px-2 py-1 rounded-full">
-          <Icon icon="noto-v1:card-file-box" width={16} className="" />
-          <p className="!text-xs text-primary ">{size} Box</p>
+      <div className='flex gap-2 justify-between'>
+        <div className='flex gap-2'>
+          <div className="flex items-center justify-center gap-1 !text-xs text-primary bg-primary/10 px-2 py-1 rounded-full">
+            <Icon icon="noto-v1:card-file-box" width={16} className="" />
+            <p className="!text-xs text-primary ">{size} Box</p>
+          </div>
+          {properties.map((property) => (
+            <p key={property} className="!text-xs text-primary bg-primary/10 px-2 py-1 rounded-full">
+              {property}
+            </p>
+          ))}
         </div>
-        {properties.map((property) => (
-          <p key={property} className="!text-xs text-primary bg-primary/10 px-2 py-1 rounded-full">
-            {property}
-          </p>
-        ))}
+        {isUrgent && <div className='ml-1 rounded-full p-1 px-2 bg-red-500 text-white flex items-center justify-center'>
+              <Icon icon="mdi:timer-sand-full" width={12} className="text-white" />
+              <p className='!text-xs mt-1'>Urgent</p>
+          </div>}
       </div>
       <div className='flex items-start gap-2 border-t-2 border-bodyText/30 border-dotted mt-6 pt-4'>
         <div className='border-1 border-primary size-12 rounded-lg bg-gray-300 shrink-0 flex items-center justify-center text-white overflow-hidden'>

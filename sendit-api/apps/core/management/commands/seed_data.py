@@ -18,117 +18,117 @@ class UserFactory(DjangoModelFactory):
     email = factory.Sequence(lambda n: f"user{n}@sendit.com")
     first_name = factory.Faker("first_name")
     last_name = factory.Faker("last_name")
+    username = factory.Faker("user_name") # Added for __str__ methods
     is_active = True
     agree_to_privacy_policy = True
 
 class Command(BaseCommand):
-    help = "Seeds the Sendit database with Users, Profiles, Wallets, and Ledger Entries."
+    help = "Seeds the Sendit database with Users, Profiles, Wallets, and now Chats/Notifications."
 
     @transaction.atomic
     def handle(self, *args, **kwargs):
         # 1. Lazy Imports
         from django.contrib.auth import get_user_model
         from apps.account.models import Profile, Verification
-        from apps.offers.models import Offer
+        from apps.offers.models import Offer, Proposal
         from apps.wallets.models import Wallet, WalletLedgerEntry
         from apps.payments.models import Transaction
-        from apps.core.models import Location
+        from apps.core.models import Location, Notification, ChatRoom, Message
+        from apps.core.services.notification_service import NotificationService
         
         User = get_user_model()
         SEED_PASSWORD = "Sendit_Secure_Auth_2026!"
 
         self.stdout.write(self.style.MIGRATE_LABEL("--- Starting Seeding Process ---"))
 
-        # 2. Definitions
+        # ... (Keep your PROTECTED_EMAILS and Cleanup logic the same) ...
         PROTECTED_EMAILS = [
             "heritage@example.com", 
             "olusatimmie07@gmail.com",
             "deepbrain77@gmail.com"
         ]
 
-        # 3. Cleanup non-protected data
-        self.stdout.write("Cleaning up old non-protected data...")
-        try:
-            # We delete everything NOT in protected list
-            Transaction.objects.exclude(wallet__user__email__in=PROTECTED_EMAILS).delete()
-            WalletLedgerEntry.objects.exclude(wallet__user__email__in=PROTECTED_EMAILS).delete()
-            Offer.objects.exclude(sender__email__in=PROTECTED_EMAILS).delete()
-            User.objects.filter(is_superuser=False).exclude(email__in=PROTECTED_EMAILS).delete()
-        except Exception as e:
-            self.stdout.write(self.style.WARNING(f"Cleanup partially skipped: {e}"))
+        # 4. Create Locations (Keep existing)
+        # 5. Helper Function to Seed Wallet (Keep existing)
+        # 6. Seed Protected Users (Keep existing)
+        # 7. Seed 10 Random Users (Keep existing)
 
-        # 4. Create Locations
-        self.stdout.write("Setting up locations...")
-        locations = []
-        city_list = ["Lagos", "Abuja", "Port Harcourt", "Ibadan"]
+        # ---------------------------------------------------------
+        # 8. Seed Offers, Notifications, and Chats
+        # ---------------------------------------------------------
+        self.stdout.write(self.style.MIGRATE_LABEL("\n--- Seeding Offers, Notifications, and Chats ---"))
         
-        for city_name in city_list:
-            # Look for ANY existing entry with this city name
-            loc = Location.objects.filter(city=city_name).first()
+        all_users = list(User.objects.all())
+        locations = list(Location.objects.all())
+
+        for i in range(15):  # Create 15 sample offers
+            sender = random.choice(all_users)
+            pickup = random.choice(locations)
+            delivery = random.choice(locations)
             
-            if not loc:
-                # Only create if it truly doesn't exist
-                loc = Location.objects.create(city=city_name, area="General")
-                self.stdout.write(f"Created new location: {city_name}")
-            else:
-                self.stdout.write(f"Using existing location: {city_name}")
-                
-            locations.append(loc)
-            
-        # 5. Helper Function to Seed Wallet & History
-        def seed_user_financials(user):
-            # Ensure Wallet exists
-            wallet, _ = Wallet.objects.get_or_create(
-                user=user,
-                defaults={
-                    'balance': Decimal("0.00"),
-                    'virtual_account_name': f"SENDIT-{user.first_name.upper()}",
-                    'virtual_account_number': "".join([str(random.randint(0, 9)) for _ in range(10)]),
-                    'virtual_account_bank_number': "WEMA BANK"
-                }
+            # Create Offer
+            offer = Offer.objects.create(
+                sender=sender,
+                package_type=random.choice(['small', 'medium', 'large']),
+                base_price=Decimal(random.randint(2000, 10000)),
+                pickup_location=pickup,
+                delivery_location=delivery,
+                status=Offer.Status.POSTED,
+                current_step=Offer.Step.POSTED,
+                description=fake.sentence(),
+                receiver_name=fake.name(),
+                receiver_phone=fake.phone_number()
             )
 
-            # Clear old entries for this specific user to avoid bloat
-            wallet.ledger_entries.all().delete()
-            wallet.balance = Decimal("0.00")
-            wallet.save()
+            # 8a. Seed Notifications for this Offer
+            NotificationService.create(
+                user=sender,
+                type=Notification.Type.NEW_OFFER,
+                title="Offer Published",
+                message=f"Your package {offer.code} is now visible to carriers.",
+                content_object=offer
+            )
 
-            # Add Credits (This triggers the WalletLedgerEntry via your model method)
-            for _ in range(random.randint(3, 5)):
-                amount = Decimal(random.randint(5000, 15000))
-                wallet.credit(amount, note="Wallet Top-up")
-                
-                # Create a matching Transaction for the UI
-                tx_ref = f"TXN-{timezone.now().strftime('%Y%m%d')}-{''.join(random.choices(string.digits, k=6))}"
-                Transaction.objects.create(
-                    wallet=wallet,
-                    tx_ref=tx_ref,
-                    amount=amount,
-                    status="success", # Matches your model status
-                    verified=True
+            # 8b. Create a Proposal and a Chat for some offers
+            if i % 2 == 0:
+                carrier = random.choice([u for u in all_users if u != sender])
+                proposal = Proposal.objects.create(
+                    offer=offer,
+                    carrier=carrier,
+                    price=offer.base_price,
+                    message="I can deliver this today!",
+                    status=Proposal.Status.PENDING
                 )
-            
-            # Refresh to ensure the instance in memory sees the balance added by the credit method
-            wallet.refresh_from_db()
-            self.stdout.write(f"Wallet for {user.email} seeded. Balance: ₦{wallet.balance}")
 
-        # 6. Seed Protected Users
-        for email in PROTECTED_EMAILS:
-            user, created = User.objects.get_or_create(
-                email=email,
-                defaults={'first_name': 'Dev', 'last_name': 'User', 'is_active': True}
-            )
-            if created:
-                user.set_password(SEED_PASSWORD)
-                user.save()
-            
-            seed_user_financials(user)
+                # Notify sender about the proposal
+                NotificationService.create(
+                    user=sender,
+                    type=Notification.Type.NEW_PROPOSAL,
+                    title="New Proposal",
+                    message=f"{carrier.first_name} sent a bid for {offer.code}",
+                    content_object=proposal
+                )
 
-        # 7. Seed 10 Random Users
-        for i in range(10):
-            user = UserFactory()
-            user.set_password(SEED_PASSWORD)
-            user.save()
-            seed_user_financials(user)
+                # 8c. Seed Chat Room and Messages
+                # Note: ChatRoom has a OneToOneField to Offer
+                room = ChatRoom.objects.create(offer=offer)
+                room.participants.add(sender, carrier)
 
-        self.stdout.write(self.style.SUCCESS("\n✅ Seeded successfully. All wallets now have balances."))
+                # Seed a conversation
+                conv_lines = [
+                    (carrier, "Hello! I saw your offer. Is the package ready for pickup?"),
+                    (sender, "Yes, it is. It's quite fragile though, please be careful."),
+                    (carrier, "No problem. I have padding in my vehicle."),
+                    (sender, "Great, see you soon.")
+                ]
+
+                # 8c. Seed Chat Room and Messages
+                for speaker, text in conv_lines:
+                    Message.objects.create(
+                        room=room,
+                        sender=speaker,
+                        text=text,
+                        timestamp=timezone.now() - timezone.timedelta(minutes=random.randint(1, 60))
+                    )
+
+        self.stdout.write(self.style.SUCCESS(f"\n✅ Seeded {Offer.objects.count()} Offers, {Notification.objects.count()} Notifications, and {ChatRoom.objects.count()} Chat Rooms."))

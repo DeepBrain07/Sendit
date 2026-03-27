@@ -16,6 +16,11 @@ const Wallet = () => {
 
     const [walletData, setWalletData] = useState({
         balance: 0,
+        account_details: {
+            account_name: "",
+            account_number: "",
+            bank: ""
+        },
         transactions: []
     });
     const [loading, setLoading] = useState(true);
@@ -31,6 +36,7 @@ const Wallet = () => {
                 console.log("Balance Response:", balanceRes.data);
                 setWalletData({
                     balance: balanceRes.data.data.balance,
+                    account_details: balanceRes.data.data.virtual_account,
                     transactions: historyRes.data.results // Accessing the 'results' array from your sample
                 });
             } catch (error) {
@@ -48,12 +54,14 @@ const Wallet = () => {
             <AddMoneyModal 
                 isAddMoneyModalOpen={isAddMoneyModalOpen} 
                 setIsAddMoneyModalOpen={setIsAddMoneyModalOpen} 
+                accountDetails={walletData.account_details} 
             />
-            <WithdrawMoneyModal 
+            <WithdrawMoneyModal
                 isWithdrawMoneyModalOpen={isWithdrawMoneyModalOpen} 
                 setIsWithdrawMoneyModalOpen={setIsWithdrawMoneyModalOpen} 
             />
-            <BankDetailsModal 
+            <BankDetailsModal
+                accountDetails={walletData.account_details} 
                 isModalOpen={isBankDetailsModalOpen} 
                 setIsModalOpen={setIsBankDetailsModalOpen} 
             />

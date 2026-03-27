@@ -32,6 +32,8 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 # Application definition
 DJANGO_APPS = [
+    'daphne',  # Must be at the top
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -63,6 +65,19 @@ LOCAL_APPS= [
 ]
 
 INSTALLED_APPS =DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+
+# Set the ASGI application path
+ASGI_APPLICATION = 'base.asgi.application'
+
+# Channel layer configuration
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
+    },
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

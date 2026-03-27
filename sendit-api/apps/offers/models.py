@@ -5,6 +5,10 @@ from rest_framework.exceptions import ValidationError
 from django.contrib.contenttypes.fields import GenericRelation
 from apps.core.models import Media, Location
 from decimal import Decimal
+import string  
+import random  
+from django.db import models
+from django.conf import settings
 
 class Offer(models.Model):
 
@@ -165,12 +169,33 @@ class Offer(models.Model):
         self.validate_step()
     
     def generate_offer_code(self):
-        "1,2,3,4"
-        last_offer = Offer.objects.only("created_at").order_by("-created_at").first()
+        """
+        Generates a unique random alphanumeric code.
+        Example: PK-A7B2C9
+        """
+        prefix = "PK-"
+        length = 6
+        characters = string.ascii_uppercase + string.digits
+        
+        while True:
+            # Generate a random 6-character string
+            random_part = ''.join(random.choices(characters, k=length))
+            code = f"{prefix}{random_part}"
+            
+            # Check if this code already exists
+            if not Offer.objects.filter(code=code).exists():
+                self.code = code
+                break
 
-        next_number = 1 if not last_offer else Offer.objects.count() + 1
-        code = f"PK-{str(next_number).zfill(6)}"
-        self.code = code
+    def save(self, *args, **kwargs):
+        # Only generate code if it doesn't exist
+        if not self.code:
+            self.generate_offer_code()
+        
+        # Ensure pricing is calculated before saving
+        self.calculate_pricing()
+        
+        super().save(*args, **kwargs)
 
     def save(self, *args, **kwargs):
         if not self.code:
