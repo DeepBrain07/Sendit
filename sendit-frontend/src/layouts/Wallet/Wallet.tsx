@@ -58,7 +58,8 @@ const Wallet = () => {
             />
             <WithdrawMoneyModal
                 isWithdrawMoneyModalOpen={isWithdrawMoneyModalOpen} 
-                setIsWithdrawMoneyModalOpen={setIsWithdrawMoneyModalOpen} 
+                setIsWithdrawMoneyModalOpen={setIsWithdrawMoneyModalOpen}
+                walletBalance={walletData.balance} 
             />
             <BankDetailsModal
                 accountDetails={walletData.account_details} 

@@ -4,7 +4,7 @@ import '../SignInLayout/style.css'
 import DashboardLayout from '../DashboardLayout/DashboardLayout';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { Button } from '../../components/Button';
-import Modal from '../../components/Modal';
+import FundEscrowModal from '../Wallet/FundEscrowModal';
 import api from '../../api/axios';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -81,6 +81,7 @@ const Notifications = () => {
 const NotificationCard = ({ proposalId, title, time, amount, carrierName, to, avatar, isRead }: { proposalId: number; title: string; time: string; amount: string; carrierName: string; to: string; avatar: string; isRead: boolean }) => {
     console.log("Notification is read:", isRead);
     console.log("Notification title:", to);
+    const [isEscrowModalOpen, setIsEscrowModalOpen] = useState(false);
     const handleAction = async (action: 'accept' | 'reject') => {
         try {
             // Both actions directed to /accept/ per instructions
@@ -94,10 +95,14 @@ const NotificationCard = ({ proposalId, title, time, amount, carrierName, to, av
 
     return (
         <div className={`flex flex-col border-b-2 border-gray-100 p-2 py-4 gap-2 `}>
+            <FundEscrowModal 
+                isModalOpen={isEscrowModalOpen} 
+                setIsModalOpen={setIsEscrowModalOpen}
+            />
             <div className='flex justify-between items-center'>
                 <div className='flex items-center gap-2'>
                     <div className='p-2 rounded-[50%] bg-gray-100'>
-                        <Icon icon="solar:bell-bold" width={24} className="text-primary"/>
+                        <Icon icon="material-symbols:luggage-rounded" width={26} className="text-primary"/>
                     </div>
                     <p className='font-black !text-lg'>{title}</p>
                 </div>
@@ -108,8 +113,8 @@ const NotificationCard = ({ proposalId, title, time, amount, carrierName, to, av
                 <div className='flex gap-2 items-center'>
                     <h2 className="font-bold">₦{amount}</h2>
                     <div className='p-2 py-1 rounded-full w-fit flex justify-center items-center bg-primary'>
-                        <Icon icon="material-symbols:luggage-rounded" width={20} className="text-white"/>
-                        <p className='!text-xs text-white ml-1'>Bidding</p>
+                        <Icon icon="codicon:thumbsup-filled" width={15} className="text-white"/>
+                        <p className='!text-xs text-white ml-1 mt-1'>Bidding</p>
                     </div>
                 </div>
                 <div className='mt-3 flex gap-2'>
@@ -137,7 +142,7 @@ const NotificationCard = ({ proposalId, title, time, amount, carrierName, to, av
                 />
                 <Button 
                     title="Accept Proposal" 
-                    onClick={() => handleAction('accept')} 
+                    onClick={() => setIsEscrowModalOpen(true)} 
                     className='!py-2 !text-xs' 
                 />
             </div>
