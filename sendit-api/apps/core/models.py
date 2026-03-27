@@ -63,6 +63,7 @@ class Notification(models.Model):
         NEW_PROPOSAL = "new_proposal", "New Proposal"
         PROPOSAL_ACCEPTED = "proposal_accepted", "Proposal Accepted"
         PROPOSAL_REJECTED = "proposal_rejected", "Proposal Rejected"
+        ESCROW_RELEASED = "escrow_released", "Escrow Released"
 
 
     user = models.ForeignKey(

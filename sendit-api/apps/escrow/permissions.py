@@ -20,4 +20,4 @@ class IsCarrier(BasePermission):
 
 class IsOfferOrProposalOwnerOrAdmin(BasePermission):
     def has_object_permission(self, request, view, obj):
-        return obj.offer.sender == request.user or obj.carrier == request.user or request.user.is_superuser
+        return obj.offer.sender == request.user or obj.proposal.carrier == request.user or request.user.is_superuser    

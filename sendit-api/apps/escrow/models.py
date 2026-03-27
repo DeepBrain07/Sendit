@@ -38,6 +38,7 @@ class Escrow(models.Model):
     )
 
     is_released = models.BooleanField(default=False)
+    note = models.TextField(null=True, blank=True)
     released_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

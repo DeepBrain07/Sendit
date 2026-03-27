@@ -8,8 +8,8 @@ class PaymentVerifyWebhookService:
     """
     Service to handle wallet funding webhooks from Interswitch.
     """
-    @staticmethod
-    def handle(payload):
+    @classmethod
+    def handle(cls,payload):
         """
         Handle a successful payment from Interswitch.
         - Marks transaction as success
@@ -74,29 +74,41 @@ class PaymentVerifyWebhookService:
             # ✅ FINALIZE TRANSACTION
             # =========================
             transaction_obj.external_id = uuid
-            transaction_obj.mark_success(payload)
 
-            wallet = transaction_obj.wallet
-
-            # ✅ credit wallet
-            wallet.balance += amount
-            wallet.save()
-
-            # ✅ ledger
-            WalletLedgerEntry.objects.create(
-                wallet=wallet,
-                entry_type=WalletLedgerEntry.EntryType.CREDIT,
-                amount=amount,
-                note=f"Wallet funded via {channel}"
-            )
+            cls.finalize_payment_success(transaction=transaction_obj, payload=payload, channel=channel)
 
         # ✅ notify user outside atomic block to avoid issues if notification fails
-        NotificationService.notify(
+        NotificationService.create(
             user=wallet.user,
             type=Notification.Type.PAYMENT_SUCCESS,
             title="Payment Successful",
             message=f"Your payment of {transaction_obj.amount} has been received via {channel}.",
-            obj=transaction_obj
+            content_object=transaction_obj
         )
 
         return transaction_obj
+    
+    @classmethod
+    def finalize_payment_success(cls,transaction:Transaction,payload, channel):
+        print('>>>>>>>>> finalize payment init<<<<<')
+        transaction.mark_success(payload)
+
+        wallet = transaction.wallet
+
+        # ✅ credit wallet
+        amount = transaction.amount
+        wallet.balance += amount
+        wallet.save()
+
+        # ✅ ledger
+        WalletLedgerEntry.objects.create(
+            wallet=wallet,
+            entry_type=WalletLedgerEntry.EntryType.CREDIT,
+            amount=amount,
+            note=f"Wallet funded via {channel}"
+        )
+        print(f"[finalize payment success] finalize payment{payload}")
+
+
+    
+    

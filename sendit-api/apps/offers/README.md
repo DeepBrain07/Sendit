@@ -122,3 +122,10 @@ POST /offers/{id}/transition/
 * handles `POSTED`, `ACCEPTED`, etc.
 * triggers notifications
 
+
+
+## ✅ Escrow System
+During transition stage `POSTED" post is made available for other to see and propose. 
+Carrier makes then bid when accepted we create an escrow for the offer and the user whose offer is accepted is attached to the offer.(proposal acceptance handles that)
+
+then the escrow is funded. the carrier when in transit 

@@ -28,7 +28,7 @@ first_version = [
     path('users/', include('apps.account.urls')),
     path('offers/', include('apps.offers.urls')),
     path('payments/', include('apps.payments.urls')),
-    path("", include('apps.wallets.urls')),
+    path("wallets/", include('apps.wallets.urls')),
     path('escrows/', include('apps.escrow.urls')),
     # path('payouts/', include('apps.payouts.urls')),
 ]

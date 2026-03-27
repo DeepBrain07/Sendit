@@ -88,6 +88,7 @@ class OfferTransitionSerializer(serializers.Serializer):
         Offer.Status.IN_TRANSIT,
         Offer.Status.DELIVERED,
         Offer.Status.CANCELLED,
+        Offer.Status.DISPUTED,
     ])
 
 

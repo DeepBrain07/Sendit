@@ -90,7 +90,7 @@ class ProposalService:
             offer.save()
 
             # Create escrow AFTER state is consistent
-            EscrowService.create_escrow(offer)
+            EscrowService.create_escrow_for_offer(offer)
 
         OfferService.handle_proposal_accepted(proposal)
 
