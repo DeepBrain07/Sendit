@@ -80,15 +80,6 @@ class Command(BaseCommand):
                 receiver_phone=fake.phone_number()
             )
 
-            # 8a. Seed Notifications for this Offer
-            NotificationService.create(
-                user=sender,
-                type=Notification.Type.NEW_OFFER,
-                title="Offer Published",
-                message=f"Your package {offer.code} is now visible to carriers.",
-                content_object=offer
-            )
-
             # 8b. Create a Proposal and a Chat for some offers
             if i % 2 == 0:
                 carrier = random.choice([u for u in all_users if u != sender])
@@ -100,7 +91,7 @@ class Command(BaseCommand):
                     status=Proposal.Status.PENDING
                 )
 
-                # Notify sender about the proposal
+                # Notify sender about the proposal (ONLY notifications relating to proposals)
                 NotificationService.create(
                     user=sender,
                     type=Notification.Type.NEW_PROPOSAL,
@@ -131,4 +122,4 @@ class Command(BaseCommand):
                         timestamp=timezone.now() - timezone.timedelta(minutes=random.randint(1, 60))
                     )
 
-        self.stdout.write(self.style.SUCCESS(f"\n✅ Seeded {Offer.objects.count()} Offers, {Notification.objects.count()} Notifications, and {ChatRoom.objects.count()} Chat Rooms."))
+        self.stdout.write(self.style.SUCCESS(f"\n✅ Seeded {Offer.objects.count()} Offers, {Notification.objects.count()} Notifications (Proposals only), and {ChatRoom.objects.count()} Chat Rooms."))
