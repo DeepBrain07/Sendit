@@ -76,9 +76,10 @@ class LocationSerializer(serializers.ModelSerializer):
 class NotificationListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
-        fields = ['id', 'type', "title",'is_read', 'created_at']
+        fields = ['id', 'type', "title", 'is_read', "object_id",'created_at']
 
 class NotificationSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Notification
-        fields = ['id', 'user', 'type', 'is_read', 'created_at', 'title', 'message']
+        fields = ['id', 'user', 'type', 'is_read', 'created_at', 'title', 'message', "object_id"]
