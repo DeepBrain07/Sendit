@@ -111,7 +111,7 @@ Explore the full product design,UI screens:
 | Name | Role | Responsibility | Social |
 |------|------|----------------|--------|
 | Alao Heritage | 🎨 Product Designer / PM | Product strategy, UX design, documentation | https://www.linkedin.com/in/alao-heritage/ |
-| Timilehin Olusa  | 💻 Frontend Developer | Mobile app development and UI implementation | https://x.com/timmieOlusa |
+| Timilehin Olusa  | 💻 Fullstack Developer | Mobile app development and UI implementation | https://x.com/timmieOlusa |
 | Popoola Temilorun | ⚙️ Backend Developer | APIs, database, and system logic |  https://www.linkedin.com/in/popoola-oluwatemilorun |
 
 ---
